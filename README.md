@@ -39,3 +39,56 @@ When the West front flares up, the East front cools down. Players cannot simply 
  └── Low (<5 units) ───> BLACKOUT / RETREAT: Control link severed. Units default to defensive AI and head home.
 
 B. Infrastructure Upgrades: Upgrading the Forward LineAt the start of a match, the connection from your Gate Routers to your Relays is bottlenecked at a throughput of 1 unit/tick. This represents baseline, unshielded copper transmission lines. Coaxial Upgrades: Increases line throughput from 1 to 4\text{ units/tick}.Fiber-Optic Deployment: Fully unleashes the line to the router's maximum limit of 8\text{ units/tick}, allowing your front lines to sustain high-intensity combat without buffer starvation.C. Electronic Warfare (E-War) TacticsBy making command systems physical, the electromagnetic spectrum becomes a core battleground:Jamming Strikes: Support units can deploy directional jamming waves. This does not damage enemy health; instead, it temporarily spikes the enemy's regional `signal_decay` variable from 0.05 to 0.20, rapidly draining their local Relay buffers and forcing a command blackout.Signal Spoofing (Hijacking): If an enemy's Relay buffer is completely starved to 0, specialized hacking units can "spoof" the command protocols, gaining temporary operational control of the abandoned, uncoordinated enemy units in that sector.Signal Tracing: Heavy micro-management (sending rapid, high-density command packets) creates visible signal pulses in the fog of war, allowing the enemy to trace the line of transmission back to the exact location of your hidden, vulnerable Forward Relays.
+
+## 5. Development Roadmap
+
+The project is built C++-first: a deterministic, headless simulation core proven in the terminal before any graphics exist. Stack: C++20, CMake, Catch2 for tests; FTXUI planned for the terminal UI. Layout:
+
+```
+netwar/
+├── sim/     libnetwar_sim — pure economy core: node graph + tick engine (no I/O)
+├── cli/     terminal frontend driving the sim
+└── tests/   Catch2 suite: invariants + golden-master scenarios
+```
+
+### M0 — Toolchain & skeleton ✅
+- [x] CMake multi-target project (`sim` static lib, `cli` executable, `tests`)
+- [x] Fixed-point `Signal` type (integer milliunits) for cross-machine determinism
+- [x] Node/Connection graph model mirroring the GDD (Source, Pool, Gate, Drain, Register)
+- [x] README scenario builder with the GDD's node IDs and constants
+- [x] First invariant tests (buffer cap respected, pools non-negative)
+
+### M1 — Deterministic economy core
+The heart of the game, fully playable by math alone.
+- [ ] Tick pipeline in fixed phase order: `generate → route → decay → combat`
+- [ ] Routing: gates pull from the Hub Buffer, throttled by line throughput (1/4/8)
+- [ ] Upkeep drain (3/tick) and buffer overflow-to-heat
+- [ ] Combat intensity registers: out-of-phase sine/cosine waves (integer lookup table, not `std::sin`, to guarantee determinism)
+- [ ] Relay decay: 5% of stored signal per tick (`signal_decay = 0.05`)
+- [ ] Brownout detection: relay state tiers High / Mid / Low (>15, 5–15, <5)
+- [ ] **Acceptance test:** 40-tick golden run reproducing the chart in section 3 — West Relay replenishes during lulls, East Relay deploys at 10, intensities oscillate out of phase
+
+### M2 — Terminal command console (FTXUI)
+Prove the core bet: routing bandwidth is more fun than APM.
+- [ ] Live dashboard: hub buffer gauge, relay plots, intensity waves, brownout alerts
+- [ ] Interactive controls: reallocate router priority, buy line upgrades (copper → coax → fiber) mid-run
+- [ ] Scenario files (JSON) so constants can be tuned without recompiling
+- [ ] Playtest checkpoint: does actively juggling the two fronts feel engaging?
+
+### M3 — Tactical layer
+- [ ] Map zones with deployable/capturable relays (anti-turtling expansion loop)
+- [ ] Units with the Autonomy State Machine: DIRECT MICRO / SEMI-AUTONOMOUS / BLACKOUT-RETREAT driven by local relay volume
+- [ ] Combat drains driven by actual unit activity instead of synthetic waves
+- [ ] Scaling domestic upkeep with base structures
+
+### M4 — Multiplayer lockstep
+- [ ] Command log: player inputs as timestamped packets (the netcode mirrors the game fiction)
+- [ ] Deterministic replays from the command log
+- [ ] State-hash checks per N ticks for desync detection
+- [ ] LAN/loopback two-player match in the terminal client
+
+### M5 — Electronic warfare & graphical client
+- [ ] Jamming: temporarily spike enemy regional `signal_decay` 0.05 → 0.20
+- [ ] Spoofing: hijack units in sectors whose relay is starved to 0
+- [ ] Signal tracing: high-density command traffic reveals relay positions through fog
+- [ ] Graphical client (raylib/SFML, or Godot via GDExtension) linking the same untouched `netwar_sim` library
