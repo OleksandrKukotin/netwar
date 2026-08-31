@@ -30,6 +30,6 @@ int main() {
                     as_units(engine.wasted_heat()));
     }
 
-    std::printf("\n(decay and combat phases land next — issues #2 and #3)\n");
+    std::printf("\n(combat phase lands next — issue #3)\n");
     return 0;
 }

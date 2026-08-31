@@ -32,7 +32,11 @@ struct Node {
 
     // Drain
     Signal consumption{}; // fixed pull per tick; 0 = driven by another phase (decay, combat)
-    Signal consumed{};    // lifetime total destroyed here (drains only)
+    // Fraction of the upstream pool leaked per tick, in per-mille so the sim
+    // stays in integer math (50 = 5%). Per-node because jamming (M5) spikes
+    // decay regionally, not globally.
+    std::int64_t decay_per_mille{};
+    Signal consumed{}; // lifetime total destroyed here (drains only)
 };
 
 // Directed edge carrying signal between nodes, throttled per tick.

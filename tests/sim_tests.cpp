@@ -44,8 +44,9 @@ TEST_CASE("hub buffer never exceeds its cap") {
 TEST_CASE("copper lines throttle routing to 1 unit per tick") {
     Engine engine(make_readme_scenario());
     engine.tick();
-    CHECK(engine.graph().find(ids::kWestRelay)->stored == units(21));
-    CHECK(engine.graph().find(ids::kEastRelay)->stored == units(11));
+    // +1 routed, then 5% decays
+    CHECK(engine.graph().find(ids::kWestRelay)->stored == units(21) - units(21) * 50 / 1000);
+    CHECK(engine.graph().find(ids::kEastRelay)->stored == units(11) - units(11) * 50 / 1000);
 }
 
 TEST_CASE("upkeep drains 3 per tick from the hub buffer") {
@@ -66,9 +67,9 @@ TEST_CASE("upgraded lines carry more, but never beyond the router allocation") {
 
     Engine engine(g);
     engine.tick();
-    CHECK(engine.graph().find(ids::kWestRelay)->stored == units(24));
+    CHECK(engine.graph().find(ids::kWestRelay)->stored == units(24) - units(24) * 50 / 1000);
     // 16/tick line, but the router allocation (8) caps the transfer
-    CHECK(engine.graph().find(ids::kEastRelay)->stored == units(18));
+    CHECK(engine.graph().find(ids::kEastRelay)->stored == units(18) - units(18) * 50 / 1000);
 }
 
 TEST_CASE("routers stop pulling when the hub buffer runs dry") {
@@ -80,8 +81,35 @@ TEST_CASE("routers stop pulling when the hub buffer runs dry") {
     engine.tick();
     // Upkeep takes 3, the west router (first in node order) the last unit
     CHECK(engine.graph().find(ids::kHubBuffer)->stored == 0);
-    CHECK(engine.graph().find(ids::kWestRelay)->stored == units(21));
-    CHECK(engine.graph().find(ids::kEastRelay)->stored == units(10));
+    CHECK(engine.graph().find(ids::kWestRelay)->stored == units(21) - units(21) * 50 / 1000);
+    CHECK(engine.graph().find(ids::kEastRelay)->stored == units(10) - units(10) * 50 / 1000);
+}
+
+TEST_CASE("relays leak 5% of their stored signal per tick") {
+    Graph g = make_readme_scenario();
+    // Silence routing so decay acts alone
+    g.find(ids::kWestRouter)->allocation = 0;
+    g.find(ids::kEastRouter)->allocation = 0;
+
+    Engine engine(g);
+    engine.tick();
+    CHECK(engine.graph().find(ids::kWestRelay)->stored == units(19));
+    CHECK(engine.graph().find(ids::kEastRelay)->stored == units(10) - units(10) * 50 / 1000);
+    CHECK(engine.graph().find(ids::kWestDecay)->consumed == units(1));
+}
+
+TEST_CASE("relays settle into the routing/decay equilibrium band") {
+    Engine engine(make_readme_scenario());
+    for (int i = 0; i < 200; ++i) engine.tick();
+
+    // Copper inflow (+1/tick) balances the 5% leak at 19 units. Truncating
+    // integer decay makes every value in [19.000, 19.020) a fixed point, so
+    // the two relays converge into that band, not to one exact number.
+    for (const NodeId relay : {ids::kWestRelay, ids::kEastRelay}) {
+        const Signal stored = engine.graph().find(relay)->stored;
+        CHECK(stored >= units(19));
+        CHECK(stored < units(19) + 20);
+    }
 }
 
 TEST_CASE("buffer surplus overflows to heat once the cap is reached") {

@@ -36,8 +36,14 @@ Graph make_readme_scenario() {
                        .stored = units(10)});
     g.nodes.push_back({.id = ids::kWestCombat, .kind = NodeKind::Drain, .name = "West Combat"});
     g.nodes.push_back({.id = ids::kEastCombat, .kind = NodeKind::Drain, .name = "East Combat"});
-    g.nodes.push_back({.id = ids::kWestDecay, .kind = NodeKind::Drain, .name = "West Decay"});
-    g.nodes.push_back({.id = ids::kEastDecay, .kind = NodeKind::Drain, .name = "East Decay"});
+    g.nodes.push_back({.id = ids::kWestDecay,
+                       .kind = NodeKind::Drain,
+                       .name = "West Decay",
+                       .decay_per_mille = 50}); // signal_decay = 0.05
+    g.nodes.push_back({.id = ids::kEastDecay,
+                       .kind = NodeKind::Drain,
+                       .name = "East Decay",
+                       .decay_per_mille = 50});
     g.nodes.push_back({.id = ids::kWestIntensity, .kind = NodeKind::Register, .name = "West Combat Intensity"});
     g.nodes.push_back({.id = ids::kEastIntensity, .kind = NodeKind::Register, .name = "East Combat Intensity"});
     g.nodes.push_back({.id = ids::kUpkeepDrain,

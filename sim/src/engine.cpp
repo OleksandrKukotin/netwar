@@ -5,13 +5,12 @@
 
 namespace netwar {
 
-Engine::Engine(Graph graph, EngineConfig config)
-    : graph_(std::move(graph)), config_(config) {}
+Engine::Engine(Graph graph) : graph_(std::move(graph)) {}
 
 void Engine::tick() {
     generate();
     route();
-    // TODO(M1): decay();  — issue #2
+    decay();
     // TODO(M1): combat(); — issue #3
     ++tick_;
 }
@@ -73,6 +72,26 @@ void Engine::route() {
                 upstream->stored -= transfer;
                 deposit(*downstream, transfer);
             }
+        }
+    }
+}
+
+void Engine::decay() {
+    // Environmental leakage is proportional to what the pool holds, not to
+    // line throughput — the connection only says where the loss is booked.
+    // Integer division truncates toward zero, identically on every machine.
+    for (auto& drain : graph_.nodes) {
+        if (drain.kind != NodeKind::Drain || drain.decay_per_mille == 0) continue;
+
+        for (const auto& conn : graph_.connections) {
+            if (conn.to != drain.id) continue;
+
+            Node* upstream = graph_.find(conn.from);
+            if (upstream == nullptr || upstream->kind != NodeKind::Pool) continue;
+
+            const Signal loss = upstream->stored * drain.decay_per_mille / 1000;
+            upstream->stored -= loss;
+            drain.consumed += loss;
         }
     }
 }
