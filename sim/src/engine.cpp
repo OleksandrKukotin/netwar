@@ -10,9 +10,9 @@ Engine::Engine(Graph graph, EngineConfig config)
 
 void Engine::tick() {
     generate();
-    // TODO(M1): route();
-    // TODO(M1): decay();
-    // TODO(M1): combat();
+    route();
+    // TODO(M1): decay();  — issue #2
+    // TODO(M1): combat(); — issue #3
     ++tick_;
 }
 
@@ -26,12 +26,62 @@ void Engine::generate() {
             Node* target = graph_.find(conn.to);
             if (target == nullptr || target->kind != NodeKind::Pool) continue;
 
-            target->stored += std::min(source.generation, conn.throughput);
-            if (target->capacity > 0 && target->stored > target->capacity) {
-                // Surplus overflows the buffer and is wasted as system heat.
-                target->stored = target->capacity;
+            deposit(*target, std::min(source.generation, conn.throughput));
+        }
+    }
+}
+
+void Engine::route() {
+    // Fixed drains first: domestic upkeep is non-negotiable (GDD 3B), so it
+    // is satisfied before the routers compete for the remaining bandwidth.
+    for (auto& drain : graph_.nodes) {
+        if (drain.kind != NodeKind::Drain || drain.consumption == 0) continue;
+
+        for (const auto& conn : graph_.connections) {
+            if (conn.to != drain.id) continue;
+
+            Node* upstream = graph_.find(conn.from);
+            if (upstream == nullptr || upstream->kind != NodeKind::Pool) continue;
+
+            const Signal take =
+                std::min({drain.consumption, conn.throughput, upstream->stored});
+            upstream->stored -= take;
+            drain.consumed += take;
+        }
+    }
+
+    // Gates pull from their upstream pool and forward through their outbound
+    // line in one motion — routers hold no signal between ticks. Node vector
+    // order fixes the contention priority deterministically.
+    for (const auto& gate : graph_.nodes) {
+        if (gate.kind != NodeKind::Gate) continue;
+
+        for (const auto& in : graph_.connections) {
+            if (in.to != gate.id) continue;
+
+            Node* upstream = graph_.find(in.from);
+            if (upstream == nullptr || upstream->kind != NodeKind::Pool) continue;
+
+            for (const auto& out : graph_.connections) {
+                if (out.from != gate.id) continue;
+
+                Node* downstream = graph_.find(out.to);
+                if (downstream == nullptr || downstream->kind != NodeKind::Pool) continue;
+
+                const Signal transfer = std::min(
+                    {gate.allocation, in.throughput, out.throughput, upstream->stored});
+                upstream->stored -= transfer;
+                deposit(*downstream, transfer);
             }
         }
+    }
+}
+
+void Engine::deposit(Node& pool, Signal amount) {
+    pool.stored += amount;
+    if (pool.capacity > 0 && pool.stored > pool.capacity) {
+        heat_ += pool.stored - pool.capacity;
+        pool.stored = pool.capacity;
     }
 }
 

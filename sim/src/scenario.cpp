@@ -40,7 +40,10 @@ Graph make_readme_scenario() {
     g.nodes.push_back({.id = ids::kEastDecay, .kind = NodeKind::Drain, .name = "East Decay"});
     g.nodes.push_back({.id = ids::kWestIntensity, .kind = NodeKind::Register, .name = "West Combat Intensity"});
     g.nodes.push_back({.id = ids::kEastIntensity, .kind = NodeKind::Register, .name = "East Combat Intensity"});
-    g.nodes.push_back({.id = ids::kUpkeepDrain, .kind = NodeKind::Drain, .name = "Local Defense Upkeep"});
+    g.nodes.push_back({.id = ids::kUpkeepDrain,
+                       .kind = NodeKind::Drain,
+                       .name = "Local Defense Upkeep",
+                       .consumption = units(3)});
 
     // Wiring. Forward lines start as unshielded copper (1/tick); coax
     // upgrades raise them to 4, fiber to the router maximum of 8.

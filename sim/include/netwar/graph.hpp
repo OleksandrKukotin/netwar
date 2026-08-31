@@ -29,6 +29,10 @@ struct Node {
 
     // Gate
     Signal allocation{}; // max units/tick the gate may pull from its upstream pool
+
+    // Drain
+    Signal consumption{}; // fixed pull per tick; 0 = driven by another phase (decay, combat)
+    Signal consumed{};    // lifetime total destroyed here (drains only)
 };
 
 // Directed edge carrying signal between nodes, throttled per tick.
