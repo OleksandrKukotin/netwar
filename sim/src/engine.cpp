@@ -1,5 +1,7 @@
 #include "netwar/engine.hpp"
 
+#include "netwar/wave.hpp"
+
 #include <algorithm>
 #include <utility>
 
@@ -11,7 +13,7 @@ void Engine::tick() {
     generate();
     route();
     decay();
-    // TODO(M1): combat(); — issue #3
+    combat();
     ++tick_;
 }
 
@@ -92,6 +94,43 @@ void Engine::decay() {
             const Signal loss = upstream->stored * drain.decay_per_mille / 1000;
             upstream->stored -= loss;
             drain.consumed += loss;
+        }
+    }
+}
+
+void Engine::combat() {
+    // Registers sample first so every drain in this tick reads the same wave
+    // position, no matter where its register sits in the node vector.
+    for (auto& reg : graph_.nodes) {
+        if (reg.kind != NodeKind::Register) continue;
+
+        const std::int64_t wave =
+            sine_per_mille(static_cast<std::int64_t>(tick_) + reg.phase_offset);
+        // The trough of the wave is a quiet front, not negative demand: the
+        // rectified half-cycle is what lets one front cool while the other
+        // flares (GDD 3C), and it keeps the peak at the register's amplitude.
+        reg.value = wave > 0 ? reg.amplitude * wave / 1000 : 0;
+    }
+
+    for (auto& drain : graph_.nodes) {
+        if (drain.kind != NodeKind::Drain || drain.driven_by == 0) continue;
+
+        const Node* intensity = graph_.find(drain.driven_by);
+        if (intensity == nullptr) continue;
+
+        for (const auto& conn : graph_.connections) {
+            if (conn.to != drain.id) continue;
+
+            Node* upstream = graph_.find(conn.from);
+            if (upstream == nullptr || upstream->kind != NodeKind::Pool) continue;
+
+            // Demand above what the relay holds is simply unmet — that
+            // starvation is the Command Brownout the tactical layer reads
+            // off the relay level (issue #4).
+            const Signal take =
+                std::min({intensity->value, conn.throughput, upstream->stored});
+            upstream->stored -= take;
+            drain.consumed += take;
         }
     }
 }

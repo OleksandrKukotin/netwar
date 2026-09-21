@@ -32,11 +32,20 @@ struct Node {
 
     // Drain
     Signal consumption{}; // fixed pull per tick; 0 = driven by another phase (decay, combat)
+    // Register whose sampled value sets this drain's pull for the tick
+    // (0 = none). Combat drains are driven; upkeep and decay are not.
+    NodeId driven_by{};
     // Fraction of the upstream pool leaked per tick, in per-mille so the sim
     // stays in integer math (50 = 5%). Per-node because jamming (M5) spikes
     // decay regionally, not globally.
     std::int64_t decay_per_mille{};
     Signal consumed{}; // lifetime total destroyed here (drains only)
+
+    // Register
+    Signal amplitude{};          // peak units/tick this register commands
+    std::int64_t phase_offset{}; // head start in wave-table steps; a quarter
+                                 // period turns the sine table into a cosine
+    Signal value{};              // value sampled this tick (0 during troughs)
 };
 
 // Directed edge carrying signal between nodes, throttled per tick.

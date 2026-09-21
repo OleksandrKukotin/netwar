@@ -24,7 +24,7 @@ private:
     void generate(); // Sources push into downstream pools (cap + overflow)
     void route();    // Fixed drains, then gates pull from pools over throttled lines
     void decay();    // Decay drains leak a per-mille slice of their upstream pool
-    // TODO(M1): combat() — intensity registers (sine/cosine) drive combat drains (issue #3)
+    void combat();   // Intensity registers sample the wave, then feed combat drains
 
     // Adds signal to a pool, clamping to capacity; the surplus becomes heat.
     void deposit(Node& pool, Signal amount);

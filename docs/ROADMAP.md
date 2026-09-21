@@ -21,11 +21,11 @@ netwar/
 
 The heart of the game, fully playable by math alone.
 
-- [ ] Tick pipeline in fixed phase order: `generate → route → decay → combat` ([#1](https://github.com/OleksandrKukotin/netwar/issues/1))
+- [x] Tick pipeline in fixed phase order: `generate → route → decay → combat` ([#1](https://github.com/OleksandrKukotin/netwar/issues/1))
 - [x] Routing: gates pull from the Hub Buffer, throttled by line throughput (1/4/8) ([#1](https://github.com/OleksandrKukotin/netwar/issues/1))
 - [x] Upkeep drain (3/tick) and buffer overflow-to-heat ([#1](https://github.com/OleksandrKukotin/netwar/issues/1))
 - [x] Relay decay: 5% of stored signal per tick (`signal_decay = 0.05`) ([#2](https://github.com/OleksandrKukotin/netwar/issues/2))
-- [ ] Combat intensity registers: out-of-phase sine/cosine waves (integer lookup table, not `std::sin`, to guarantee determinism) ([#3](https://github.com/OleksandrKukotin/netwar/issues/3))
+- [x] Combat intensity registers: out-of-phase sine/cosine waves (integer lookup table, not `std::sin`, to guarantee determinism) ([#3](https://github.com/OleksandrKukotin/netwar/issues/3))
 - [ ] Brownout detection: relay state tiers High / Mid / Low (>15, 5–15, <5) ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
 - [ ] **Acceptance test:** 40-tick golden run reproducing the chart in the GDD — West Relay replenishes during lulls, East Relay deploys at 10, intensities oscillate out of phase ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
 

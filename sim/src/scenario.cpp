@@ -1,5 +1,7 @@
 #include "netwar/scenario.hpp"
 
+#include "netwar/wave.hpp"
+
 namespace netwar {
 
 Graph make_readme_scenario() {
@@ -34,8 +36,14 @@ Graph make_readme_scenario() {
                        .kind = NodeKind::Pool,
                        .name = "East Relay",
                        .stored = units(10)});
-    g.nodes.push_back({.id = ids::kWestCombat, .kind = NodeKind::Drain, .name = "West Combat"});
-    g.nodes.push_back({.id = ids::kEastCombat, .kind = NodeKind::Drain, .name = "East Combat"});
+    g.nodes.push_back({.id = ids::kWestCombat,
+                       .kind = NodeKind::Drain,
+                       .name = "West Combat",
+                       .driven_by = ids::kWestIntensity});
+    g.nodes.push_back({.id = ids::kEastCombat,
+                       .kind = NodeKind::Drain,
+                       .name = "East Combat",
+                       .driven_by = ids::kEastIntensity});
     g.nodes.push_back({.id = ids::kWestDecay,
                        .kind = NodeKind::Drain,
                        .name = "West Decay",
@@ -44,8 +52,19 @@ Graph make_readme_scenario() {
                        .kind = NodeKind::Drain,
                        .name = "East Decay",
                        .decay_per_mille = 50});
-    g.nodes.push_back({.id = ids::kWestIntensity, .kind = NodeKind::Register, .name = "West Combat Intensity"});
-    g.nodes.push_back({.id = ids::kEastIntensity, .kind = NodeKind::Register, .name = "East Combat Intensity"});
+    // Out-of-phase tactical cycles: the west front reads the sine table
+    // straight, the east front a quarter period ahead of it (cosine), so
+    // when one theater flares the other cools. Peak demand is the router
+    // maximum of 8 units/tick (GDD 3A).
+    g.nodes.push_back({.id = ids::kWestIntensity,
+                       .kind = NodeKind::Register,
+                       .name = "West Combat Intensity",
+                       .amplitude = units(8)});
+    g.nodes.push_back({.id = ids::kEastIntensity,
+                       .kind = NodeKind::Register,
+                       .name = "East Combat Intensity",
+                       .amplitude = units(8),
+                       .phase_offset = kCosineOffset});
     g.nodes.push_back({.id = ids::kUpkeepDrain,
                        .kind = NodeKind::Drain,
                        .name = "Local Defense Upkeep",

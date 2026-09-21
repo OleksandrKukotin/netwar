@@ -2,8 +2,24 @@
 
 #include <netwar/engine.hpp>
 #include <netwar/scenario.hpp>
+#include <netwar/wave.hpp>
+
+#include <algorithm>
+#include <utility>
 
 using namespace netwar;
+
+namespace {
+
+// Silences the combat phase so a test can watch routing or decay alone.
+Graph without_combat(Graph g) {
+    for (auto& node : g.nodes) {
+        if (node.kind == NodeKind::Register) node.amplitude = 0;
+    }
+    return g;
+}
+
+} // namespace
 
 TEST_CASE("readme scenario wires the core graph") {
     const Graph g = make_readme_scenario();
@@ -42,7 +58,7 @@ TEST_CASE("hub buffer never exceeds its cap") {
 }
 
 TEST_CASE("copper lines throttle routing to 1 unit per tick") {
-    Engine engine(make_readme_scenario());
+    Engine engine(without_combat(make_readme_scenario()));
     engine.tick();
     // +1 routed, then 5% decays
     CHECK(engine.graph().find(ids::kWestRelay)->stored == units(21) - units(21) * 50 / 1000);
@@ -58,7 +74,7 @@ TEST_CASE("upkeep drains 3 per tick from the hub buffer") {
 }
 
 TEST_CASE("upgraded lines carry more, but never beyond the router allocation") {
-    Graph g = make_readme_scenario();
+    Graph g = without_combat(make_readme_scenario());
     g.find(ids::kHubBuffer)->stored = units(50);
     for (auto& conn : g.connections) {
         if (conn.id == ids::kWestLine) conn.throughput = units(4);  // coax
@@ -73,7 +89,7 @@ TEST_CASE("upgraded lines carry more, but never beyond the router allocation") {
 }
 
 TEST_CASE("routers stop pulling when the hub buffer runs dry") {
-    Graph g = make_readme_scenario();
+    Graph g = without_combat(make_readme_scenario());
     g.find(ids::kCommandHub)->generation = 0;
     g.find(ids::kHubBuffer)->stored = units(4);
 
@@ -86,7 +102,7 @@ TEST_CASE("routers stop pulling when the hub buffer runs dry") {
 }
 
 TEST_CASE("relays leak 5% of their stored signal per tick") {
-    Graph g = make_readme_scenario();
+    Graph g = without_combat(make_readme_scenario());
     // Silence routing so decay acts alone
     g.find(ids::kWestRouter)->allocation = 0;
     g.find(ids::kEastRouter)->allocation = 0;
@@ -99,7 +115,7 @@ TEST_CASE("relays leak 5% of their stored signal per tick") {
 }
 
 TEST_CASE("relays settle into the routing/decay equilibrium band") {
-    Engine engine(make_readme_scenario());
+    Engine engine(without_combat(make_readme_scenario()));
     for (int i = 0; i < 200; ++i) engine.tick();
 
     // Copper inflow (+1/tick) balances the 5% leak at 19 units. Truncating
@@ -147,4 +163,83 @@ TEST_CASE("pools never go negative") {
             }
         }
     }
+}
+
+TEST_CASE("the sine table is a closed, symmetric period") {
+    // Determinism rests on this table, so pin its shape rather than its use.
+    CHECK(sine_per_mille(0) == 0);
+    CHECK(sine_per_mille(kWavePeriod / 4) == 1000);
+    CHECK(sine_per_mille(kWavePeriod / 2) == 0);
+    CHECK(sine_per_mille(3 * kWavePeriod / 4) == -1000);
+
+    for (std::int64_t step = 0; step < kWavePeriod; ++step) {
+        CHECK(sine_per_mille(step) == sine_per_mille(step + kWavePeriod));
+        CHECK(sine_per_mille(step) == -sine_per_mille(step + kWavePeriod / 2));
+        CHECK(sine_per_mille(step) == sine_per_mille(step - kWavePeriod));
+    }
+}
+
+TEST_CASE("combat intensities peak at 8 and run out of phase") {
+    Engine engine(make_readme_scenario());
+
+    Signal west_peak = 0;
+    Signal east_peak = 0;
+    int both_flaring = 0;
+
+    for (int i = 0; i < kWavePeriod; ++i) {
+        engine.tick();
+        const Signal west = engine.graph().find(ids::kWestIntensity)->value;
+        const Signal east = engine.graph().find(ids::kEastIntensity)->value;
+
+        CHECK(west >= 0);
+        CHECK(east >= 0);
+        west_peak = std::max(west_peak, west);
+        east_peak = std::max(east_peak, east);
+        // Out of phase by a quarter period: one front is always quiet or
+        // cooling while the other is at its worst.
+        if (west == units(8) || east == units(8)) CHECK(west + east == units(8));
+        if (west > 0 && east > 0) ++both_flaring;
+    }
+
+    CHECK(west_peak == units(8));
+    CHECK(east_peak == units(8));
+    // Rectified half-cycles overlap for only four of the twenty ticks — the
+    // quarter-period offset minus the tick each front spends at a zero
+    // crossing. The rest of the time exactly one theater is demanding.
+    CHECK(both_flaring == 4);
+}
+
+TEST_CASE("combat drains the relay by the sampled intensity") {
+    Graph g = make_readme_scenario();
+    // Freeze the wave at its west peak and let only combat touch the relay.
+    g.find(ids::kWestRouter)->allocation = 0;
+    g.find(ids::kWestDecay)->decay_per_mille = 0;
+    g.find(ids::kEastIntensity)->amplitude = 0;
+    // Charged well past what the quarter period costs, so this measures the
+    // wave arithmetic rather than a starving relay.
+    g.find(ids::kWestRelay)->stored = units(100);
+
+    Engine engine(std::move(g));
+    for (int i = 0; i < kWavePeriod / 4; ++i) engine.tick();
+
+    // Ticks 0-4 of the wave, each truncated on its own: 8 * {0, .309, .588,
+    // .809, .951}. Summing the table first would hide that per-tick rounding.
+    const Signal expected = 0 + 2472 + 4704 + 6472 + 7608;
+    CHECK(engine.graph().find(ids::kWestCombat)->consumed == expected);
+    CHECK(engine.graph().find(ids::kWestRelay)->stored == units(100) - expected);
+}
+
+TEST_CASE("a starved relay stops paying combat instead of going negative") {
+    Graph g = make_readme_scenario();
+    // No resupply at all: both fronts must bottom out at zero and stay there.
+    g.find(ids::kCommandHub)->generation = 0;
+
+    Engine engine(std::move(g));
+    for (int i = 0; i < 100; ++i) {
+        engine.tick();
+        CHECK(engine.graph().find(ids::kWestRelay)->stored >= 0);
+        CHECK(engine.graph().find(ids::kEastRelay)->stored >= 0);
+    }
+    CHECK(engine.graph().find(ids::kWestRelay)->stored == 0);
+    CHECK(engine.graph().find(ids::kEastRelay)->stored == 0);
 }
