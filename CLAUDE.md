@@ -15,9 +15,10 @@ Requires CMake ≥ 3.24 and a C++20 compiler. **Do not use MSVC** — the owner 
 PATH="/c/Users/Oleksandr/w64devkit/bin:$PATH" "/c/Program Files/CMake/bin/cmake.exe" -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug
 PATH="/c/Users/Oleksandr/w64devkit/bin:$PATH" "/c/Program Files/CMake/bin/cmake.exe" --build build -j 8
 
-# Tests (Catch2 via FetchContent — first configure needs network)
+# Tests (Catch2 + FTXUI via FetchContent — first configure needs network)
 "/c/Program Files/CMake/bin/ctest.exe" --test-dir build --output-on-failure
 ./build/tests/netwar_tests.exe "hub buffer never exceeds its cap"   # single test by name
+./build/cli/netwar.exe [seed]                                       # the playable FTXUI console (needs a real terminal)
 ./build/cli/netwar_cli.exe                                          # 40-tick economy dry run
 ```
 
@@ -30,6 +31,10 @@ Three targets with one-way dependencies: `sim/` (static lib `netwar_sim`) ← `c
 - `graph.hpp` — `Node` (kinds: Source/Pool/Gate/Drain/Register) and `Connection` (throttled edge). Node and connection IDs (202, 203, 214…) are the GDD's IDs — keep them in sync with `docs/GDD.md`.
 - `engine.hpp/.cpp` — `Engine::tick()` runs phases in fixed order: `generate → route → decay → combat` (route/decay/combat are M1 work, issues #1–#3).
 - `scenario.hpp/.cpp` — `make_readme_scenario()` builds the GDD's two-front economy; it is the fixture for tests and the CLI.
+- `tier.hpp` — brownout tiers (DIRECTED >15 / SEMI 5–15 / BLACKOUT <5) read off a relay level.
+- `match.hpp/.cpp` — `Match`, the playable ruleset layered on `Engine`: player commands (line upgrades, router allocation, priority), matter, front-line hold, seeded flare jitter/escalation, storms, outcome. **Provisional playtest rules, not GDD canon.** Its constants were tuned with the bots in `tests/match_tests.cpp`; the "balance" test there fails if a rules change shifts the balance — retune deliberately rather than loosening the test.
+
+`cli/src/play.cpp` is the FTXUI game (`netwar` target); it only renders `Match` and maps keys to its commands. The clock thread never touches the match — it posts closures to the UI thread.
 
 ### Determinism rules (non-negotiable)
 

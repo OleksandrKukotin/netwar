@@ -7,7 +7,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(netwar_tests sim_tests.cpp)
+add_executable(netwar_tests sim_tests.cpp match_tests.cpp)
 target_link_libraries(netwar_tests PRIVATE netwar_sim Catch2::Catch2WithMain)
 
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)

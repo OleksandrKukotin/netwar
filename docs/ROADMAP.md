@@ -26,15 +26,17 @@ The heart of the game, fully playable by math alone.
 - [x] Upkeep drain (3/tick) and buffer overflow-to-heat ([#1](https://github.com/OleksandrKukotin/netwar/issues/1))
 - [x] Relay decay: 5% of stored signal per tick (`signal_decay = 0.05`) ([#2](https://github.com/OleksandrKukotin/netwar/issues/2))
 - [x] Combat intensity registers: out-of-phase sine/cosine waves (integer lookup table, not `std::sin`, to guarantee determinism) ([#3](https://github.com/OleksandrKukotin/netwar/issues/3))
-- [ ] Brownout detection: relay state tiers High / Mid / Low (>15, 5–15, <5) ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
+- [x] Brownout detection: relay state tiers High / Mid / Low (>15, 5–15, <5) ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
 - [ ] **Acceptance test:** 40-tick golden run reproducing the chart in the GDD — West Relay replenishes during lulls, East Relay deploys at 10, intensities oscillate out of phase ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
 
 ## M2 — Terminal command console (FTXUI)
 
 Prove the core bet: routing bandwidth is more fun than APM. ([#6](https://github.com/OleksandrKukotin/netwar/issues/6))
 
-- [ ] Live dashboard: hub buffer gauge, relay plots, intensity waves, brownout alerts
-- [ ] Interactive controls: reallocate router priority, buy line upgrades (copper → coax → fiber) mid-run
+- [x] Live dashboard: hub buffer gauge, relay plots, intensity waves, brownout alerts
+- [x] Interactive controls: reallocate router priority, buy line upgrades (copper → coax → fiber) mid-run
+- [x] Tick duration as a live runtime control (GDD section 6)
+- [x] Provisional match ruleset (`sim/include/netwar/match.hpp`): matter economy for upgrades, front lines moved by command tier, jittered and escalating flares with 20-tick intel, spectrum-weather storms, win/lose — balance guarded by bot tests
 - [ ] Scenario files (JSON) so constants can be tuned without recompiling
 - [ ] Playtest checkpoint: does actively juggling the two fronts feel engaging?
 
