@@ -16,7 +16,7 @@ NETWAR is a reinvention of the RTS genre: command authority is not a magical, in
 
 ## Status
 
-**Playable prototype.** The deterministic economy core (M0/M1) now drives a terminal game: a conductor console where you juggle command bandwidth between two fronts (early M2). The match rules are a provisional playtest ruleset — see [How to play](#how-to-play). See **[docs/ROADMAP.md](docs/ROADMAP.md)** and the [open issues](https://github.com/OleksandrKukotin/netwar/issues).
+**Playable prototype.** The deterministic economy core (M0/M1) now drives a terminal game: a conductor console where you juggle command bandwidth between two fronts (early M2). The match rules are a provisional playtest ruleset — see [How to play](#how-to-play). See **[docs/ROADMAP.md](docs/ROADMAP.md)** (playtest findings: [docs/PLAYTEST.md](docs/PLAYTEST.md)) and the [open issues](https://github.com/OleksandrKukotin/netwar/issues).
 
 ## Building
 
