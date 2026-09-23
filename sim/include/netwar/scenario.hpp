@@ -4,7 +4,7 @@
 
 namespace netwar {
 
-// Node and connection IDs from the GDD (README section 2).
+// Node and connection IDs from the GDD (section 4).
 namespace ids {
 inline constexpr NodeId kCommandHub = 202;
 inline constexpr NodeId kHubBuffer = 203;

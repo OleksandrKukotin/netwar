@@ -49,7 +49,7 @@ struct Node {
 };
 
 // Directed edge carrying signal between nodes, throttled per tick.
-// throughput 1 = copper, 4 = coax, 8 = fiber (see GDD section 4B).
+// throughput 1 = copper, 4 = coax, 8 = fiber (see GDD section 7A).
 struct Connection {
     std::uint32_t id{};
     NodeId from{};

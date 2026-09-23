@@ -45,7 +45,7 @@ The sim must produce bit-identical results on every machine — lockstep multipl
 - No `std::sin`/`std::cos` — combat intensity waves (issue #3) use an integer lookup table.
 - Iterate nodes/connections in a fixed order; never depend on pointer or hash order.
 
-Tests enforce invariants (pools never negative, caps never exceeded); M1 ends with a golden-master test reproducing the 40-tick chart in `docs/GDD.md` section 3 — treat that chart as an executable spec.
+Tests enforce invariants (pools never negative, caps never exceeded); M1 ends with a golden-master test reproducing the 40-tick chart in `docs/GDD.md` section 5 — treat that chart as an executable spec.
 
 ## Licensing intent
 

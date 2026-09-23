@@ -55,7 +55,7 @@ Graph make_readme_scenario() {
     // Out-of-phase tactical cycles: the west front reads the sine table
     // straight, the east front a quarter period ahead of it (cosine), so
     // when one theater flares the other cools. Peak demand is the router
-    // maximum of 8 units/tick (GDD 3A).
+    // maximum of 8 units/tick (GDD 5A).
     g.nodes.push_back({.id = ids::kWestIntensity,
                        .kind = NodeKind::Register,
                        .name = "West Combat Intensity",

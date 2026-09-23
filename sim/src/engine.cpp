@@ -33,7 +33,7 @@ void Engine::generate() {
 }
 
 void Engine::route() {
-    // Fixed drains first: domestic upkeep is non-negotiable (GDD 3B), so it
+    // Fixed drains first: domestic upkeep is non-negotiable (GDD 5B), so it
     // is satisfied before the routers compete for the remaining bandwidth.
     for (auto& drain : graph_.nodes) {
         if (drain.kind != NodeKind::Drain || drain.consumption == 0) continue;
@@ -108,7 +108,7 @@ void Engine::combat() {
             sine_per_mille(static_cast<std::int64_t>(tick_) + reg.phase_offset);
         // The trough of the wave is a quiet front, not negative demand: the
         // rectified half-cycle is what lets one front cool while the other
-        // flares (GDD 3C), and it keeps the peak at the register's amplitude.
+        // flares (GDD 5C), and it keeps the peak at the register's amplitude.
         reg.value = wave > 0 ? reg.amplitude * wave / 1000 : 0;
     }
 

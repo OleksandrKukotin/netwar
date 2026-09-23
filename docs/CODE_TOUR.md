@@ -150,7 +150,7 @@ Overflow isn't silently discarded — it's *accounted for*. Same idea as drains 
 
 ## 4. `scenario.hpp` / `scenario.cpp` — the GDD as data
 
-`make_readme_scenario()` builds the exact graph from GDD §2: hub (12/tick) → buffer (cap 100) → upkeep (3) + two routers (8) over copper lines (1) → relays (west seeded 20, east 10) → combat/decay drains.
+`make_readme_scenario()` builds the exact graph from GDD §4: hub (12/tick) → buffer (cap 100) → upkeep (3) + two routers (8) over copper lines (1) → relays (west seeded 20, east 10) → combat/decay drains.
 
 Two things worth knowing:
 

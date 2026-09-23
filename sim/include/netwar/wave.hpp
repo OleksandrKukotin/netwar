@@ -26,7 +26,7 @@ constexpr std::int64_t sine_per_mille(std::int64_t step) {
 }
 
 // A cosine is the same table read a quarter period ahead — that quarter-period
-// offset is what puts the two fronts out of phase (GDD section 3C).
+// offset is what puts the two fronts out of phase (GDD section 5C).
 inline constexpr std::int64_t kCosineOffset = kWavePeriod / 4;
 
 } // namespace netwar
