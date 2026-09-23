@@ -340,6 +340,7 @@ Element header(const Console& c, int tick_ms, bool paused) {
     return hbox({
         text(" NETWAR ") | bold | inverted | color(kAmber),
         text(" // CONDUCTOR CONSOLE") | color(kAmber),
+        text("  v" NETWAR_VERSION) | color(kDim),
         filler(),
         text("T+" + std::to_string(m.tick())) | bold,
         text("   seed " + std::to_string(c.seed)) | color(kDim),

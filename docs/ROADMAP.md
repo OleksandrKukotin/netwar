@@ -29,7 +29,7 @@ The heart of the game, fully playable by math alone.
 - [x] Brownout detection: relay state tiers High / Mid / Low (>15, 5–15, <5) ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
 - [ ] **Acceptance test:** 40-tick golden run reproducing the chart in the GDD — West Relay replenishes during lulls, East Relay deploys at 10, intensities oscillate out of phase ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
 
-## M2 — Terminal command console (FTXUI)
+## M2 — Terminal command console (FTXUI) — first playable: v0.1.0-alpha
 
 Prove the core bet: routing bandwidth is more fun than APM. ([#6](https://github.com/OleksandrKukotin/netwar/issues/6))
 

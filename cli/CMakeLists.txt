@@ -15,3 +15,4 @@ FetchContent_MakeAvailable(ftxui)
 
 add_executable(netwar src/play.cpp)
 target_link_libraries(netwar PRIVATE netwar_sim ftxui::component)
+target_compile_definitions(netwar PRIVATE NETWAR_VERSION="${NETWAR_VERSION}")
