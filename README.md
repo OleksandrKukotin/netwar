@@ -50,8 +50,11 @@ Push either front to 100% for a **breakthrough**. Let either collapse to 0% and 
 | + − | tick speed (0.25–3 s, default 1 s) |
 | n | single step while paused |
 | h / r / q | briefing / new match / quit |
+| l | switch language (English / українська) |
 
 Every match is seeded (the seed is shown in the header). `./build/cli/netwar 42` replays the same enemy.
+
+The console speaks English and Ukrainian. At start-up it asks which one, with the cursor on the locale's language (`LANG=uk_UA.UTF-8` suggests Ukrainian). `--lang uk` or `--lang en` skips the question, and `l` switches mid-match. Keys work on a Ukrainian keyboard layout too.
 
 ## Building
 
