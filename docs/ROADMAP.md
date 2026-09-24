@@ -37,6 +37,7 @@ Prove the core bet: routing bandwidth is more fun than APM. ([#6](https://github
 - [x] Interactive controls: reallocate router priority, buy line upgrades (copper → coax → fiber) mid-run
 - [x] Tick duration as a live runtime control (GDD section 6)
 - [x] Provisional match ruleset (`sim/include/netwar/match.hpp`): matter economy for upgrades, front lines moved by command tier, jittered and escalating flares with 20-tick intel, spectrum-weather storms, win/lose — balance guarded by bot tests
+- [x] Ukrainian localization: language picker at start-up, `--lang`, live switch, ЙЦУКЕН key aliases — v0.2.0-alpha
 - [ ] Scenario files (JSON) so constants can be tuned without recompiling
 - [ ] Playtest checkpoint: does actively juggling the two fronts feel engaging? — first signal positive, see [PLAYTEST.md](PLAYTEST.md)
 

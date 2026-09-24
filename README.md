@@ -2,7 +2,7 @@
 
 > *The line of communication is the line of fire.*
 
-**v0.1.0-alpha**: the first playable build. It is a single-player terminal prototype of the core loop. See [What you can play today](#what-you-can-play-today).
+**v0.2.0-alpha**: a single-player terminal prototype of the core loop, in English and Ukrainian. See [What you can play today](#what-you-can-play-today).
 
 NETWAR is a reinvention of the RTS genre. Command authority is not a magical, instant input but a physical, vulnerable network resource: **Command Bandwidth**. It is generated at your HQ and carried over wire you lay yourself to the structures that need it. You never command an army. You command a base, and every moment you decide **which part of your machine is allowed to be smart right now.**
 
@@ -19,7 +19,7 @@ NETWAR is a reinvention of the RTS genre. Command authority is not a magical, in
 
 ## What you can play today
 
-v0.1.0-alpha is the **conductor console**: one base, two fronts, one hub, played in the terminal against scripted enemy pressure. It exists to test the core bet: *is routing bandwidth more fun than clicking?* The first playtest says yes. It also says the game is currently too hard and explains too little. Findings and planned fixes are in **[docs/PLAYTEST.md](docs/PLAYTEST.md)**.
+The current build is the **conductor console**: one base, two fronts, one hub, played in the terminal against scripted enemy pressure. It exists to test the core bet: *is routing bandwidth more fun than clicking?* The first playtest says yes. It also says the game is currently too hard and explains too little. Findings and planned fixes are in **[docs/PLAYTEST.md](docs/PLAYTEST.md)**.
 
 Not in this build: the map, structures, the matter economy beyond line upgrades, a human opponent, and electronic warfare. The match rules are a **provisional playtest ruleset** (`sim/include/netwar/match.hpp`), not the final design. Enemy pressure is synthetic: out-of-phase waves with jitter and escalation. The finished game gives that job to the opponent.
 
