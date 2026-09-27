@@ -31,4 +31,10 @@ inline constexpr std::uint32_t kUpkeepLine = 227;
 // out-of-phase combat intensity and 5% decay.
 Graph make_readme_scenario();
 
+// The same economy with both forward lines upgraded to coax (4/tick) — the
+// network the GDD section 5 chart depicts. It is the golden-master fixture:
+// relays drain during their flare and replenish during the lull. The copper
+// baseline above is the deliberately desperate opening position.
+Graph make_golden_scenario();
+
 } // namespace netwar

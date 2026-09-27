@@ -10,6 +10,7 @@ sim/include/netwar/scenario.hpp  the GDD's two-front economy as data
 sim/src/*.cpp                    implementations
 cli/src/main.cpp                 40-tick dry run printer
 tests/sim_tests.cpp              invariants + exact-value checks
+tests/golden_tests.cpp           40-tick golden master (GDD §5 chart)
 ```
 
 ---
@@ -199,5 +200,5 @@ Forty ticks, seven columns (buffer, each relay with its combat intensity, upkeep
 
 ## Where the code goes next
 
-- **Issue #4 — brownouts**: relay volume maps to High / Mid / Low tiers (>15 / 5–15 / <5), and a golden-master test pins the full 40-tick run against the GDD chart.
+- **Issue #4 — brownouts** (done): relay volume maps to High / Mid / Low tiers (>15 / 5–15 / <5), and `tests/golden_tests.cpp` pins the full 40-tick run of the coax network that the GDD §5 chart is drawn from.
 - **M2 — the game**: FTXUI dashboard + live reallocation, where the fixed west-first priority in `route()` becomes a player decision.

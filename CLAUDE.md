@@ -30,7 +30,7 @@ Three targets with one-way dependencies: `sim/` (static lib `netwar_sim`) ← `c
 
 - `graph.hpp` — `Node` (kinds: Source/Pool/Gate/Drain/Register) and `Connection` (throttled edge). Node and connection IDs (202, 203, 214…) are the GDD's IDs — keep them in sync with `docs/GDD.md`.
 - `engine.hpp/.cpp` — `Engine::tick()` runs phases in fixed order: `generate → route → decay → combat` (route/decay/combat are M1 work, issues #1–#3).
-- `scenario.hpp/.cpp` — `make_readme_scenario()` builds the GDD's two-front economy; it is the fixture for tests and the CLI.
+- `scenario.hpp/.cpp` — `make_readme_scenario()` builds the GDD's two-front economy; it is the fixture for tests and the CLI. `make_golden_scenario()` is the same graph with coax lines, the golden-master fixture.
 - `tier.hpp` — brownout tiers (DIRECTED >15 / SEMI 5–15 / BLACKOUT <5) read off a relay level.
 - `match.hpp/.cpp` — `Match`, the playable ruleset layered on `Engine`: player commands (line upgrades, router allocation, priority), matter, front-line hold, seeded flare jitter/escalation, storms, outcome. **Provisional playtest rules, not GDD canon.** Its constants were tuned with the bots in `tests/match_tests.cpp`; the "balance" test there fails if a rules change shifts the balance — retune deliberately rather than loosening the test.
 
@@ -45,7 +45,7 @@ The sim must produce bit-identical results on every machine — lockstep multipl
 - No `std::sin`/`std::cos` — combat intensity waves (issue #3) use an integer lookup table.
 - Iterate nodes/connections in a fixed order; never depend on pointer or hash order.
 
-Tests enforce invariants (pools never negative, caps never exceeded); M1 ends with a golden-master test reproducing the 40-tick chart in `docs/GDD.md` section 5 — treat that chart as an executable spec.
+Tests enforce invariants (pools never negative, caps never exceeded); `tests/golden_tests.cpp` pins the 40-tick run of `make_golden_scenario()` (the baseline with coax lines) tick-for-tick; the chart in `docs/GDD.md` section 5 is drawn from that run — treat it as an executable spec, and regenerate both together if the design changes deliberately.
 
 ## Licensing intent
 

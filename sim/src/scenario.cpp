@@ -86,4 +86,12 @@ Graph make_readme_scenario() {
     return g;
 }
 
+Graph make_golden_scenario() {
+    Graph g = make_readme_scenario();
+    for (auto& conn : g.connections) {
+        if (conn.id == ids::kWestLine || conn.id == ids::kEastLine) conn.throughput = units(4);
+    }
+    return g;
+}
+
 } // namespace netwar

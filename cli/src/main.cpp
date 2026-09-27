@@ -33,6 +33,5 @@ int main() {
                     as_units(engine.wasted_heat()));
     }
 
-    std::printf("\n(brownout tiers land next — issue #4)\n");
     return 0;
 }

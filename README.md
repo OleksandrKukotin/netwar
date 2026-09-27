@@ -72,7 +72,7 @@ On Windows, build with MinGW-w64 GCC (e.g. [w64devkit](https://github.com/skeeto
 
 ## Status
 
-- **M0 and M1: deterministic economy core.** Done, except the golden-master test (#4), which waits on an open design question in GDD §5.
+- **M0 and M1: deterministic economy core.** Done. A golden-master test pins the 40-tick run charted in GDD §5.
 - **M2: terminal console.** The first playable build is v0.1.0-alpha. Still to come: UX fixes from the playtest, JSON scenario files, and more playtesting.
 - **M3 and later:** the tactical layer, lockstep multiplayer, electronic warfare, and a graphical client.
 

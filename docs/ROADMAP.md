@@ -1,6 +1,6 @@
 # NETWAR — Development Roadmap
 
-The project is built C++-first: a deterministic, headless simulation core proven in the terminal before any graphics exist. Stack: C++20, CMake, Catch2 for tests; FTXUI planned for the terminal UI.
+The project is built C++-first: a deterministic, headless simulation core proven in the terminal before any graphics exist. Stack: C++20, CMake, Catch2 for tests, FTXUI for the terminal UI.
 
 ```
 netwar/
@@ -17,7 +17,7 @@ netwar/
 - [x] GDD scenario builder with the design doc's node IDs and constants
 - [x] First invariant tests (buffer cap respected, pools non-negative)
 
-## M1 — Deterministic economy core
+## M1 — Deterministic economy core ✅
 
 The heart of the game, fully playable by math alone.
 
@@ -27,7 +27,7 @@ The heart of the game, fully playable by math alone.
 - [x] Relay decay: 5% of stored signal per tick (`signal_decay = 0.05`) ([#2](https://github.com/OleksandrKukotin/netwar/issues/2))
 - [x] Combat intensity registers: out-of-phase sine/cosine waves (integer lookup table, not `std::sin`, to guarantee determinism) ([#3](https://github.com/OleksandrKukotin/netwar/issues/3))
 - [x] Brownout detection: relay state tiers High / Mid / Low (>15, 5–15, <5) ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
-- [ ] **Acceptance test:** 40-tick golden run reproducing the chart in the GDD — West Relay replenishes during lulls, East Relay deploys at 10, intensities oscillate out of phase ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
+- [x] **Acceptance test:** 40-tick golden run of the coax network, pinned tick-for-tick and drawn as the GDD section 5 chart — relays replenish during lulls, East Relay deploys at 10, intensities oscillate out of phase ([#4](https://github.com/OleksandrKukotin/netwar/issues/4))
 
 ## M2 — Terminal command console (FTXUI) — first playable: v0.1.0-alpha
 

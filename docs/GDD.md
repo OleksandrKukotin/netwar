@@ -119,25 +119,55 @@ This continuous resource pipeline is structurally modeled via three functional l
 
 NETWAR implements a series of hard mathematical limitations to systematically dismantle archaic RTS exploits:
 
+The chart below is the **golden-master run**: the first 40 ticks of the section 4 economy with both forward lines upgraded to **coaxial** (4 units/tick, section 7A). It is generated from the simulation and pinned tick-for-tick, in milliunits, by `tests/golden_tests.cpp`, so treat it as an executable spec: if the simulation stops reproducing it, either the code regressed or the design changed deliberately and the chart must be regenerated with it.
+
 ```
-Bandwidth / Intensity
- 100 ────────────────────────────────────────── [Hub Signal Buffer] (Cap: 100 with active overflow)
-  90 ──────────────────────────────────────────
-  80 ──────────────────────────────────────────
-  70 ──────────────────────────────────────────
-  60 ──────────────────────────────────────────
-  50 ─●────────────────────────────────────────
-  40 ───●──────────────────────────────────────
-  30 ────●───────●───●───────────────────────── [West Relay] (Replenishes during combat lulls)
-  20 ─────●─────●─────●────────────────────────
-  10 ──────●───●───────●─────────────────────── [East Relay] (Deploys with lower baseline buffer)
-   0 ────────●───────────●───────────────────── [Combat Intensities] (Asymmetric, out-of-phase curves)
-     0    5   10   15   20   25   30   35   40  Step (Tick)
+Relay level, units   (W = West Relay, E = East Relay, · = Hub Buffer)
+  40 ┤                                        ·
+  38 ┤                                    E ··
+  36 ┤                                   E·E  W
+  34 ┤                EE   WW           E·  EW
+  32 ┤               E    W           ··
+  30 ┤                  E    W      ·· E    WE
+  28 ┤              E    W        ··  E    W
+  26 ┤             E    WE    W ··   E    W
+  24 ┤            E    W      ··    E    W    E
+  22 ┤ WW        E    W   E ·· W
+  20 ┤W  W                ··       E    W
+  18 ┤    W     E    W  ··        E    W
+  16 ┤         E    W ··   E    W
+  14 ┤              ··           E    W
+  12 ┤     W  E   ·W        E   EW   W
+  10 ┤E         ··
+   8 ┤      WE··  W          E E  W W
+   6 ┤ E    E·   W            E    W
+   4 ┤    ·· W
+   2 ┤  E· E    W
+   0 ┤·· EE   WW
+      ┬────┬────┬────┬────┬────┬────┬────┬────┬
+      0    5    10   15   20   25   30   35   40  tick
+
+Combat intensity, units/tick   (w = West, e = East; blank = quiet)
+   8 ┤ ee  www            eee  www            e
+   7 ┤
+   6 ┤   ew   w          e   ew   w          e
+   5 ┤   we    w        e    we    w        e
+   4 ┤
+   3 ┤
+   2 ┤  w  e    w      e    w  e    w      e
+   1 ┤
+      ┬────┬────┬────┬────┬────┬────┬────┬────┬
+      0    5    10   15   20   25   30   35   40  tick
 ```
 
-> **⚠ Open question — resolve before the golden-master test (issue #4).** The curve above is drawn for relays that can actually replenish between flares. The baseline constants in section 4 cannot produce it. Copper lines deliver **1 unit/tick** against an average rectified combat demand of **~2.53 units/tick** (amplitude 8 × the mean of the positive half of the wave table), plus 5% decay on top. In the real 40-tick run both relays sit at zero from roughly tick 5 onward, while the Hub Buffer saturates at its cap and vents 7 units/tick as heat from tick 14. The chart also starts the West Relay near 50 where section 4C specifies 20.
->
-> Three ways out, to be chosen deliberately: (a) the chart depicts an **upgraded** network (coaxial, 4/tick), and the golden test is written against that scenario while the copper baseline stands as an intentionally desperate opening position; (b) the **constants are rebalanced** so the baseline sustains itself; (c) the chart is **illustrative only**, and the acceptance test pins observed behavior instead. Until this is closed, treat the chart as intent, not as spec.
+What the run shows:
+
+- **Relays replenish during lulls.** Each flare drains its relay, and the quiet half of the cycle refills it. Both relays swing between roughly 7 and 37 units once the opening transient has passed.
+- **Every front passes through all three tiers.** Both relays black out on first contact, because the East Relay deploys with only 10 units and the West with 20. They recover to DIRECTED during the lull. Later flares brown them out only to SEMI-AUTONOMOUS.
+- **Demand is out of phase.** Each front peaks at 8 units/tick while the other is quiet.
+- **The hub creeps rather than caps.** Net income is 9 units/tick against 8 units/tick of forward lines, so the Hub Buffer gains 1 unit/tick and vents no heat inside the run. It reaches its cap of 100 around tick 100.
+
+**The copper baseline is a deliberately desperate opening.** At 1 unit/tick per line, the relays cannot keep up with an average rectified combat demand of ~2.53 units/tick plus decay. Both relays sit near zero from about tick 6, and the Hub Buffer fills to its cap and vents the surplus as heat. That is the position the first line upgrade is meant to escape.
 
 ### A. The Death Ball Solution
 
