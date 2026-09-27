@@ -89,3 +89,10 @@ netwar/
 ```
 
 The `sim` library is deliberately headless and deterministic: integer-only math, a fixed tick order, and seeded randomness. The same seed and the same commands always produce the same match, which is the foundation for replays and lockstep multiplayer. Balance is guarded by bots in `tests/match_tests.cpp`. Doing nothing loses in ~80 ticks, buying upgrades without touching the routers wins about 1 match in 4, and a crude juggling bot wins about 9 in 10.
+
+## License
+
+NETWAR is split into open code and a proprietary world:
+
+- **Code**: everything under `sim/`, `cli/` and `tests/`, plus the CMake build files. Licensed under the **GNU General Public License v3.0 or later**; see [LICENSE](LICENSE). You may study, modify and redistribute it, but derivative works must stay open under the same terms.
+- **Design and world**: the design documents in `docs/` and the lore, factions, plot and campaign in `ideas.md`. © 2026 Oleksandr Kukotin, **all rights reserved**. They are published to read, not to reuse. The GPL does not cover them.

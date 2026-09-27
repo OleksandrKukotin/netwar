@@ -49,4 +49,4 @@ Tests enforce invariants (pools never negative, caps never exceeded); `tests/gol
 
 ## Licensing intent
 
-No LICENSE file yet (issue #5). Agreed plan: GPL-3.0 for code, all-rights-reserved for design docs (`docs/`, `ideas.md`). Don't add a different license.
+`LICENSE` is GPL-3.0 (declared as GPL-3.0-or-later in the README's License section) and covers the code: `sim/`, `cli/`, `tests/`, CMake files. Design docs (`docs/`, `ideas.md`) are © Oleksandr Kukotin, all rights reserved. No per-file SPDX headers, by the owner's choice. Don't add a different license.
