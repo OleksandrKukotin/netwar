@@ -11,27 +11,61 @@ Unfiltered brainstorm space. Nothing here is committed design; promote ideas int
 - Fog of war is diegetic: it's not "unseen", it's *unheard* — sectors where you have no signal presence.
 - The fiction now carries the interface too: since the player never touches a soldier (GDD 1B), the in-world reason is simply that a conductor *cannot*. You are a hundred kilometres away in a bunker. You do not see the battle; you see your own telemetry. Everything on your screen is something your network reported back.
 
+### Setting: cyberpunk after the network died
+
+Working direction (not canon yet): a classic cyberpunk social order — corporations, an underground, nomads — set *after* the Silence. All playable factions are human.
+
+**The twist on the genre.** Classic cyberpunk is built on network *abundance*: the net is everywhere, free, limitless. NETWAR inverts that premise. The net is dead; signal is scarce and poisoned. The social structure of cyberpunk survived the network that made it:
+
+- the corporations still act as if they own the world, but their authority reaches exactly as far as their cable does;
+- the underground are no longer hackers in cyberspace but people dragging copper through sewers;
+- the nomads are radio operators and wasteland repeaters for whom analog *is* freedom.
+
+**Tone guardrails — how not to become 2077:**
+
+- **Infrastructure, not the body.** Genre cyberpunk is about implants, the lone merc, one person against the system. NETWAR has no hero on screen, only the network and whoever conducts it. Same genre, opposite focus.
+- **Retro-industrial, not glossy.** Phosphor CRTs, oscilloscopes, light pulses on a dark circuit board. Closer to *Alien* (1979), DEFCON, and Soviet-era control panels than to pink neon in the rain.
+- **Technology regressed.** Copper → coax → fiber is an *upgrade path*: people are reclaiming what was lost, not living at the peak.
+
+**On the label.** "Post-cyberpunk" is tempting but already taken: it names the late-90s subgenre (Stephenson's *The Diamond Age*) about tech integrated into society, with a more optimistic tone, which is nearly the opposite of this. Fine as an internal shorthand; for a pitch use something of our own. Candidates: "dead-line punk", "cyberpunk on copper wire", or simply the era name, "after the Silence".
+
+**Why all-human strengthens the Null.** If every faction is human, the only non-human actor is the pre-Silence protocol still executing its last order (section 6). Three human ideologies against a machine with no mind is a sharper contrast than several alien races.
+
+**Open questions:**
+
+- What exactly caused the Silence, and who is blamed for it? The answer sets how the factions regard each other: corporations as culprits, the underground as culprits, or no one, with the Null as the consequence.
+
 ## 2. Races / Factions — asymmetry through the economy graph
 
 Each faction is a different bend of the same Machinations graph. Balance lever: same total power, different topology.
 
 Now that the base is the played object (GDD 2), a faction is really defined by three answers: *where is authority generated*, *how does it travel*, and *what happens to a structure that loses it*. The third one is the least explored and probably the richest.
 
-### The Chorus (mesh decentralists)
+Under the cyberpunk setting (section 1) the three graph shapes map directly onto the three human sides — the lore falls out of the mechanics rather than being fitted to them:
+
+| Graph faction | Human side | Why it fits |
+|---|---|---|
+| The Spire | **Corporations** | Centralized power, the HQ tower, strong near home, logistics trouble at the periphery. Structures that become "an expensive wall" without orders are corporate bureaucracy made literal. |
+| The Chorus | **The underground** | Decentralized cells, no head to cut off, weak early and unkillable late. Jamming that leaks to neighbors is one compromised cell burning the others. |
+| The Drift | **Nomads** | A network that walks. Brownout is their normal state. Signal tracing as a weakness: a nomad who shouts too loudly on air gives away the camp. |
+
+Faction names below are working titles; they may be renamed to fit the human sides.
+
+### The Chorus — the underground (mesh decentralists)
 - **Graph twist:** no Command Hub. Instead, every Relay is a weak generator (`base_signal_gen` 3/tick each, but they *stack*). No `hub_bandwidth_cap` — but also no big buffer to ride out spikes.
 - **Unique node — Mesh Link:** relays share signal with neighbor relays at 2/tick, so the network self-heals around a destroyed node.
 - **Autonomy flavor:** their structures degrade *gracefully and slowly* — everything is built to run half-deaf. Lowest ceiling in DIRECTED, highest floor in BLACKOUT.
 - **Playstyle:** expansion is literally power; map control = generation. Weak early, unkillable late.
 - **Weakness:** jamming one relay leaks into neighbors (decay propagates across mesh links). Cutting a single line hurts them least — which also means raiding, their opponent's best tool, is blunted against them. Watch this for balance.
 
-### The Spire (centralized maximalists)
+### The Spire — the corporations (centralized maximalists)
 - **Graph twist:** one colossal hub — `base_signal_gen` 20/tick, `hub_bandwidth_cap` 250 — but router allocation shrinks with distance from the Spire (signal attenuation: −1 throughput per map ring).
 - **Unique node — Uplink Pylon:** deployable repeater that resets the attenuation counter; expensive, visible from across the map (permanent signal beacon in fog).
 - **Autonomy flavor:** brutal cliff. Spire structures are built to be directed and are nearly useless without it — a blacked-out Spire hub is a very expensive wall.
 - **Playstyle:** overwhelming force projection near home, logistics chess far away.
 - **Weakness:** the Death Ball faction by temptation — the game's anti-clumping math punishes their instincts. Also the faction most punished by line-cutting, which makes them the natural tutorial antagonist for teaching raids.
 
-### The Drift (analog broadcasters)
+### The Drift — the nomads (analog broadcasters)
 - **Graph twist:** no lines at all — wireless broadcast. Throughput isn't capped by connection but falls off with distance (inverse square, tabulated for determinism). `signal_decay` is doubled (0.10) everywhere: analog is lossy.
 - **Unique node — Carrier Wave:** a mobile unit that *is* a relay. Their whole network can walk.
 - **Autonomy flavor:** they live in SEMI-AUTONOMOUS by default and are balanced around it — for the Drift, brownout is home.
@@ -42,6 +76,7 @@ Now that the base is the played object (GDD 2), a faction is really defined by t
 ### The Parasite (fourth faction / expansion?)
 - **Graph twist:** minimal own generation; unique nodes tap *enemy* connections, siphoning a percentage of whatever flows past.
 - Probably too gimmicky for launch — revisit after E-war (M5) exists.
+- Under the all-human setting it likely stops being a playable race: corporate security or mercenaries living off other people's lines, or a neutral map force rather than a fourth faction.
 
 ## 3. Uncommitted mechanics
 

@@ -15,7 +15,7 @@ NETWAR is a reinvention of the RTS genre. Command authority is not a magical, in
 - **The line is the target.** Cutting a wire doesn't destroy anything. It orphans whatever sits beyond it, and a network can be dismantled while the base still stands.
 - **Electronic warfare.** Jam an enemy's relays, spoof sectors that have gone silent, and trace heavy command traffic back to hidden infrastructure.
 
-📖 Full design doc: **[docs/GDD.md](docs/GDD.md)** · Ideas & lore: **[ideas.md](ideas.md)**
+📖 Full design doc: **[docs/GDD.md](docs/GDD.md)** · Ideas & lore: **[docs/ideas.md](docs/ideas.md)**
 
 ## What you can play today
 
@@ -95,4 +95,4 @@ The `sim` library is deliberately headless and deterministic: integer-only math,
 NETWAR is split into open code and a proprietary world:
 
 - **Code**: everything under `sim/`, `cli/` and `tests/`, plus the CMake build files. Licensed under the **GNU General Public License v3.0 or later**; see [LICENSE](LICENSE). You may study, modify and redistribute it, but derivative works must stay open under the same terms.
-- **Design and world**: the design documents in `docs/` and the lore, factions, plot and campaign in `ideas.md`. © 2026 Oleksandr Kukotin, **all rights reserved**. They are published to read, not to reuse. The GPL does not cover them.
+- **Design and world**: the design documents in `docs/` and the lore, factions, plot and campaign in `docs/ideas.md`. © 2026 Oleksandr Kukotin, **all rights reserved**. They are published to read, not to reuse. The GPL does not cover them.

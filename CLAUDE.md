@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-NETWAR — an RTS where command authority is a physical network resource ("Command Bandwidth"): orders are data packets routed from a hub over throttled lines to front-line relays. The design doc is `docs/GDD.md` (node IDs, constants, and mechanics referenced throughout the code), the milestone plan is `docs/ROADMAP.md` (tracked in GitHub issues #1–#6), and `ideas.md` is a non-binding brainstorm notebook.
+NETWAR — an RTS where command authority is a physical network resource ("Command Bandwidth"): orders are data packets routed from a hub over throttled lines to front-line relays. The design doc is `docs/GDD.md` (node IDs, constants, and mechanics referenced throughout the code), the milestone plan is `docs/ROADMAP.md` (tracked in GitHub issues #1–#6), and `docs/ideas.md` is a non-binding brainstorm notebook (lore, factions, setting). Working setting direction (not canon): cyberpunk *after* the network died — all factions human (corporations / underground / nomads mapped onto the Spire / Chorus / Drift graphs), retro-industrial tone rather than neon; the Null is the only non-human actor.
 
 ## Build & test
 
@@ -49,4 +49,4 @@ Tests enforce invariants (pools never negative, caps never exceeded); `tests/gol
 
 ## Licensing intent
 
-`LICENSE` is GPL-3.0 (declared as GPL-3.0-or-later in the README's License section) and covers the code: `sim/`, `cli/`, `tests/`, CMake files. Design docs (`docs/`, `ideas.md`) are © Oleksandr Kukotin, all rights reserved. No per-file SPDX headers, by the owner's choice. Don't add a different license.
+`LICENSE` is GPL-3.0 (declared as GPL-3.0-or-later in the README's License section) and covers the code: `sim/`, `cli/`, `tests/`, CMake files. Design docs (`docs/`, including `docs/ideas.md`) are © Oleksandr Kukotin, all rights reserved. No per-file SPDX headers, by the owner's choice. Don't add a different license.

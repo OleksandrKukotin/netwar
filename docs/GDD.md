@@ -210,7 +210,7 @@ Correct tick length is necessary but not sufficient. Attention allocation only g
 1. **The opponent** — the honest source, and the reason the core bet is only truly testable in PvP.
 2. **Vein depletion** — resource hubs exhaust their ground, forcing attention and new wire outward. The natural metronome of expansion.
 3. **Spectrum weather** — forecast windows of elevated global `signal_decay`. Announced in advance, so they are planned brownouts to prepare for, not random punishment.
-4. **Propagation delay** — if commands take time to arrive, every decision must be made ahead of need (see `ideas.md`; not yet committed).
+4. **Propagation delay** — if commands take time to arrive, every decision must be made ahead of need (see `docs/ideas.md`; not yet committed).
 
 **Acceptance criterion for the M2 playtest:** a meaningful decision at least every 10–15 seconds, and no stretch longer than ~30 seconds spent merely waiting. Dead air indicates a missing source of change from the list above, not a wrong tick rate.
 
