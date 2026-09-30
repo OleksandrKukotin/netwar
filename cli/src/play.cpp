@@ -16,6 +16,7 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/terminal.hpp>
 
 #include <algorithm>
 #include <array>
@@ -123,6 +124,14 @@ struct LogLine {
     netwar::Tick tick{};
     std::string text;
     Color tint;
+    int router = -1; // front whose router this line reports; repeats on a tick merge
+};
+
+// Where a front is heading if the player changes nothing.
+struct Outlook {
+    std::array<Signal, static_cast<std::size_t>(kIntel)> relay{};
+    netwar::Tick falls_in = 0;          // ticks until the hold hits 0; 0 = not in the window
+    netwar::Tick breaks_through_in = 0; // ticks until the hold hits 100%; 0 = not in the window
 };
 
 struct Console {
@@ -132,15 +141,44 @@ struct Console {
     Front selected = Front::West;
     std::array<std::deque<Sample>, 2> history;
     std::deque<LogLine> log;
+    std::array<bool, 2> hub_short{}; // the router got less than it asked for last tick
+    std::array<Outlook, 2> outlook{};
     bool briefing = true;
 
     Console(const Lang& l, std::uint64_t s)
         : lang(&l), seed(s), match(netwar::MatchRules{.seed = s}) {
         note(lang->console_online, kCyan);
+        project();
     }
 
-    void note(std::string text, Color tint) {
-        log.push_front({match.tick(), std::move(text), tint});
+    // Runs a copy of the match kIntel ticks ahead with the current settings.
+    // The wave period equals the intel window and storms are announced that
+    // far ahead, so the copy sees nothing the enemy forecast does not already
+    // show. Called after every tick and every command, so a key press
+    // redraws the future at once.
+    void project() {
+        Match future = match;
+        outlook = {};
+        for (netwar::Tick ahead = 1; ahead <= kIntel; ++ahead) {
+            future.step();
+            for (Front f : kFronts) {
+                Outlook& o = outlook[idx(f)];
+                o.relay[static_cast<std::size_t>(ahead - 1)] = future.relay(f);
+                if (o.falls_in == 0 && future.hold(f) == 0) o.falls_in = ahead;
+                if (o.breaks_through_in == 0 && future.hold(f) == netwar::kHoldMax) {
+                    o.breaks_through_in = ahead;
+                }
+            }
+        }
+    }
+
+    void note(std::string text, Color tint, int router = -1) {
+        // Holding ↑↓ reports once per tick per front, not once per key repeat.
+        if (router >= 0 && !log.empty() && log.front().router == router &&
+            log.front().tick == match.tick()) {
+            log.pop_front();
+        }
+        log.push_front({match.tick(), std::move(text), tint, router});
         while (log.size() > kLogLines) log.pop_back();
     }
 
@@ -162,16 +200,42 @@ struct Console {
         } else {
             note(l.no_matter(name, num(cost, 0)), kDim);
         }
+        project();
     }
 
+    // Moves the router and says what it did to the supply, because the line
+    // often caps the flow and the change is otherwise invisible.
     void nudge_allocation(Signal delta) {
-        match.set_allocation(selected, match.allocation(selected) + delta);
+        const Lang& l = *lang;
+        const std::string name = front_name(l, selected);
+        const int tag = static_cast<int>(idx(selected));
+        const Signal before = match.allocation(selected);
+        const Signal flow_before = match.requested_flow(selected);
+        match.set_allocation(selected, before + delta);
+        const Signal after = match.allocation(selected);
+        const Signal flow_after = match.requested_flow(selected);
+
+        if (after == before) {
+            note(delta > 0 ? l.router_at_max(name, num(match.router_max(), 0))
+                           : l.router_at_off(name),
+                 kDim, tag);
+        } else if (flow_after == flow_before) {
+            note(l.router_capped(name, num(before, 0), num(after, 0), num(flow_after, 0),
+                                 grade_name(l, match.grade(selected))),
+                 kAmber, tag);
+        } else {
+            note(l.router_changed(name, num(before, 0), num(after, 0), num(flow_before, 0),
+                                  num(flow_after, 0)),
+                 kCyan, tag);
+        }
+        project();
     }
 
     void give_priority() {
         if (match.priority() == selected) return;
         match.set_priority(selected);
         note(lang->took_priority(front_name(*lang, selected)), kCyan);
+        project();
     }
 
     // --- Clock ---
@@ -192,6 +256,7 @@ struct Console {
         match.step();
 
         for (Front f : kFronts) {
+            hub_short[idx(f)] = match.delivered(f) < match.requested_flow(f);
             auto& h = history[idx(f)];
             h.push_back({match.intensity(f), match.relay(f)});
             while (h.size() > kHistory) h.pop_front();
@@ -223,40 +288,100 @@ struct Console {
         case netwar::Outcome::Defeat: note(l.lost_log, kRed); break;
         case netwar::Outcome::InProgress: break;
         }
+        project();
     }
 };
 
 // --- Rendering ------------------------------------------------------------------
 
+// One cell of the tier strip. The glyph thins with the tier, so the strip
+// reads without colour too.
+Element tier_cell(Signal relay) {
+    const Tier t = netwar::tier_of(relay);
+    static const char* const kGlyph[] = {"▒", "▓", "█"}; // Blackout, Semi, Directed
+    return text(kGlyph[static_cast<std::size_t>(t)]) | color(tier_color(t));
+}
+
+// The verdict on a front's outlook, most urgent first: a collapse or a
+// breakthrough inside the window, then the worst tier it will fall to.
+Element outlook_status(const Console& c, Front f) {
+    const Lang& l = *c.lang;
+    const Match& m = c.match;
+    if (m.outcome() != netwar::Outcome::InProgress) return text("");
+    const Outlook& o = c.outlook[idx(f)];
+    if (o.falls_in > 0) {
+        return text(l.outlook_falls(std::to_string(o.falls_in))) | bold | color(kRed);
+    }
+    if (o.breaks_through_in > 0) {
+        return text(l.outlook_breaks(std::to_string(o.breaks_through_in))) | bold | color(kGreen);
+    }
+
+    // Only a return to DIRECTED counts as recovery: a brief climb to SEMI
+    // between flares would read as good news it is not.
+    const Tier now = m.tier(f);
+    Tier worst = now;
+    netwar::Tick worst_at = 0;
+    netwar::Tick directed_at = 0;
+    for (std::size_t i = 0; i < o.relay.size(); ++i) {
+        const Tier t = netwar::tier_of(o.relay[i]);
+        const auto ahead = static_cast<netwar::Tick>(i + 1);
+        if (t < worst) {
+            worst = t;
+            worst_at = ahead;
+        }
+        if (directed_at == 0 && t == Tier::Directed) directed_at = ahead;
+    }
+    if (worst < now) {
+        return text(l.outlook_worse(tier_name(l, worst), std::to_string(worst_at))) | bold |
+               color(tier_color(worst));
+    }
+    if (now == Tier::Directed) return text(l.outlook_holds) | color(kGreen);
+    if (directed_at > 0) {
+        return text(l.outlook_recovers(tier_name(l, Tier::Directed), std::to_string(directed_at))) |
+               color(kCyan);
+    }
+    return text(l.outlook_stuck(tier_name(l, Tier::Directed), std::to_string(kIntel))) | bold |
+           color(tier_color(now));
+}
+
+// The scope: the past on the left of the bar, the next kIntel ticks on the
+// right (dimmed). The enemy wave comes from intel; the relay level and tier
+// come from the projection, so they show what happens if nothing changes.
 Element scope_row(const Console& c, Front f) {
     const Lang& l = *c.lang;
     const Match& m = c.match;
     const Signal max = m.rules().max_amplitude;
     const auto& h = c.history[idx(f)];
+    const Outlook& o = c.outlook[idx(f)];
 
     Elements intensity;
     Elements relay;
+    Elements tiers;
     for (std::size_t i = h.size(); i < kHistory; ++i) {
         intensity.push_back(text(" "));
         relay.push_back(text(" "));
+        tiers.push_back(text(" "));
     }
     for (const Sample& s : h) {
         intensity.push_back(text(spark(s.intensity, max)) | color(kAmber));
         relay.push_back(text(spark(s.relay, m.relay_capacity())) |
                         color(tier_color(netwar::tier_of(s.relay))));
+        tiers.push_back(tier_cell(s.relay));
     }
-    intensity.push_back(text("│") | color(kWhite));
-    relay.push_back(text("│") | color(kWhite));
+    for (Elements* row : {&intensity, &relay, &tiers}) row->push_back(text("│") | color(kWhite));
     for (netwar::Tick ahead = 1; ahead <= kIntel; ++ahead) {
+        const Signal future = o.relay[static_cast<std::size_t>(ahead - 1)];
         intensity.push_back(text(spark(m.forecast_intensity(f, ahead), max)) | color(kAmber) | dim);
-        relay.push_back(text(" "));
+        relay.push_back(text(spark(future, m.relay_capacity())) |
+                        color(tier_color(netwar::tier_of(future))) | dim);
+        tiers.push_back(tier_cell(future) | dim);
     }
 
     return vbox({
         hbox({label(l.wave), hbox(std::move(intensity))}),
         hbox({label(l.level), hbox(std::move(relay))}),
-        hbox({label(""), text(pad(l.past, kHistory)) | color(kDim),
-              text(std::string(" ") + l.intel) | color(kDim)}),
+        hbox({label(l.tier_row), hbox(std::move(tiers))}),
+        hbox({label(""), text(pad(l.past, kHistory + 1)) | color(kDim), outlook_status(c, f)}),
     });
 }
 
@@ -280,17 +405,58 @@ Element front_panel(const Console& c, Front f) {
     Element line_row = hbox({label(l.line), text(pad(grade_name(l, m.grade(f)), 7)) | bold,
                              text(num(m.line_throughput(f), 0) + l.per_tick), upgrade});
 
-    // Router
-    std::string pips;
+    // Router: two cells per unit. Units the line can carry are cyan; units
+    // the router asks for beyond the line are red, because they never arrive.
     const auto alloc = m.allocation(f) / netwar::kSignalScale;
+    const auto flow = m.requested_flow(f) / netwar::kSignalScale;
     const auto router_max = m.router_max() / netwar::kSignalScale;
-    for (Signal i = 0; i < router_max; ++i) pips += i < alloc ? "■" : "□";
+    Elements bar;
+    for (Signal i = 0; i < router_max; ++i) {
+        if (i < flow) {
+            bar.push_back(text("██") | color(kCyan));
+        } else if (i < alloc) {
+            bar.push_back(text("██") | color(kRed) | dim);
+        } else {
+            bar.push_back(text("░░") | color(kDim));
+        }
+    }
     const bool priority = m.priority() == f;
     Element router_row =
-        hbox({label(l.router), text(pips) | color(kCyan),
-              text(" " + num(m.allocation(f), 0) + l.per_tick),
+        hbox({label(l.router), hbox(std::move(bar)),
+              text(" " + num(m.allocation(f), 0) + l.per_tick) | bold,
               priority ? text(std::string("  ") + l.priority_on) | color(kAmber) | bold
                        : text(std::string("  ") + l.priority_hint) | color(kDim)});
+
+    // Supply: what reaches the relay per tick, and which link limits it.
+    const bool hub_short = c.hub_short[idx(f)];
+    const Signal supplied = hub_short ? m.delivered(f) : m.requested_flow(f);
+    std::string why;
+    Color why_color = kDim;
+    if (m.allocation(f) == 0) {
+        why = l.supply_off;
+        why_color = kRed;
+    } else if (hub_short) {
+        why = l.supply_short(num(m.delivered(f)), num(m.requested_flow(f)));
+        if (!priority) why += l.supply_short_hint;
+        why_color = kRed;
+    } else if (m.relay(f) >= m.relay_capacity()) {
+        why = l.supply_full;
+        why_color = kAmber;
+    } else if (m.allocation(f) > m.line_throughput(f)) {
+        why = m.upgrade_cost(f) > 0 ? l.supply_line : l.supply_line_max;
+        why_color = kAmber;
+    } else if (m.allocation(f) < m.line_throughput(f)) {
+        why = l.supply_router;
+        why_color = kCyan;
+    } else {
+        why = l.supply_matched;
+    }
+    Element supply_row = hbox({
+        label(l.supply),
+        text("━━▶ ") | color(kCyan),
+        text(num(supplied) + l.per_tick) | bold | color(supplied > 0 ? kCyan : kRed),
+        text("  " + why) | color(why_color),
+    });
 
     // Relay
     Element relay_row = hbox({
@@ -326,12 +492,20 @@ Element front_panel(const Console& c, Front f) {
         text("  " + std::to_string(hold / 1000) + "%") | bold | color(hold_color),
     });
 
-    Element body = vbox({line_row, router_row, relay_row, separatorLight(), enemy_row,
+    Element body = vbox({router_row, line_row, supply_row, relay_row, separatorLight(), enemy_row,
                          scope_row(c, f), separatorLight(), hold_row});
 
     Element title = text(std::string(" ") + l.front_title[idx(f)] + " " + (selected ? "◀ " : "")) |
                     bold | color(selected ? kWhite : kDim);
-    return window(title, body, selected ? DOUBLE : ROUNDED) | color(selected ? kAmber : kDim) | flex;
+    return window(title, body, selected ? DOUBLE : ROUNDED) | color(selected ? kAmber : kDim);
+}
+
+// Both fronts side by side at the same width, so a long status on one
+// panel clips instead of squeezing the other.
+Element fronts(const Console& c, int screen_width) {
+    const int half = screen_width / 2;
+    return hbox({front_panel(c, Front::West) | size(WIDTH, EQUAL, half),
+                 front_panel(c, Front::East) | size(WIDTH, EQUAL, screen_width - half)});
 }
 
 Element header(const Console& c, int tick_ms, bool paused) {
@@ -421,6 +595,7 @@ Element briefing_box(const Lang& l) {
                       para(l.brief_role, kAmber),
                       text(""),
                       para(l.brief_hub),
+                      para(l.brief_flow),
                       para(l.brief_flares),
                       text(l.brief_tiers),
                       tier_row(Tier::Directed, kGreen),
@@ -524,7 +699,7 @@ int main(int argc, char** argv) {
             header(console, tick_ms, paused),
             separator() | color(kDim),
             hub_panel(console),
-            hbox({front_panel(console, Front::West), front_panel(console, Front::East)}),
+            fronts(console, Terminal::Size().dimx),
             window(text(console.lang->signal_log) | color(kDim), log_panel(console)) | color(kDim),
             keys_bar(*console.lang),
         });

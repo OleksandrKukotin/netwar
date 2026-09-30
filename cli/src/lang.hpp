@@ -56,8 +56,15 @@ struct Lang {
     const char* front_row;
     const char* wave;
     const char* level;
+    const char* tier_row;
     const char* past;
-    const char* intel;
+    // Scope verdict on where the front is heading if nothing changes.
+    Msg (*outlook_falls)(Arg ticks);
+    Msg (*outlook_breaks)(Arg ticks);
+    Msg (*outlook_worse)(Arg tier, Arg ticks);
+    Msg (*outlook_recovers)(Arg directed, Arg ticks);
+    Msg (*outlook_stuck)(Arg directed, Arg window);
+    const char* outlook_holds;
     const char* maxed;
     const char* matter_unit; // cost suffix: "30m"
     const char* priority_on;
@@ -68,6 +75,16 @@ struct Lang {
     Msg (*quiet)(Arg ticks);
     const char* collapse;
     const char* breakthrough;
+    // Supply row: what reaches the relay, and what limits it.
+    const char* supply;
+    const char* supply_line;     // the line caps the router
+    const char* supply_line_max; // ... and the line is already fiber
+    const char* supply_router;   // the router is below the line
+    const char* supply_matched;
+    const char* supply_off;
+    const char* supply_full;
+    Msg (*supply_short)(Arg got, Arg wanted);
+    const char* supply_short_hint; // shown when the front lacks priority
 
     // Signal log
     const char* signal_log;
@@ -76,6 +93,10 @@ struct Lang {
     Msg (*upgraded)(Arg front, Arg grade, Arg cost);
     Msg (*no_matter)(Arg front, Arg cost);
     Msg (*took_priority)(Arg front);
+    Msg (*router_at_max)(Arg front, Arg max);
+    Msg (*router_at_off)(Arg front);
+    Msg (*router_changed)(Arg front, Arg from, Arg to, Arg flow_from, Arg flow_to);
+    Msg (*router_capped)(Arg front, Arg from, Arg to, Arg flow, Arg grade);
     Msg (*contact)(Arg front, Arg peak);
     Msg (*browns_out)(Arg front, Arg tier);
     Msg (*recovers)(Arg front, Arg tier);
@@ -103,6 +124,7 @@ struct Lang {
     const char* briefing_title;
     const char* brief_role;
     const char* brief_hub;
+    const char* brief_flow;
     const char* brief_flares;
     const char* brief_tiers;
     std::array<const char*, 3> brief_tier_range; // Blackout, Semi, Directed
@@ -165,8 +187,14 @@ inline const Lang kEnglish = {
     .front_row = "FRONT",
     .wave = "WAVE",
     .level = "LEVEL",
+    .tier_row = "TIER",
     .past = "past",
-    .intel = "intel",
+    .outlook_falls = [](Arg t) { return "✖ FRONT FALLS in " + t + "t"; },
+    .outlook_breaks = [](Arg t) { return "★ BREAKTHROUGH in " + t + "t"; },
+    .outlook_worse = [](Arg tier, Arg t) { return "⚠ " + tier + " in " + t + "t"; },
+    .outlook_recovers = [](Arg tier, Arg t) { return "▲ " + tier + " in " + t + "t"; },
+    .outlook_stuck = [](Arg tier, Arg w) { return "⚠ no " + tier + " in " + w + "t"; },
+    .outlook_holds = "✔ holds",
     .maxed = "maxed",
     .matter_unit = "m",
     .priority_on = "★ PRIORITY",
@@ -177,6 +205,17 @@ inline const Lang kEnglish = {
     .quiet = [](Arg t) { return "quiet, contact in " + t + "t"; },
     .collapse = "collapse",
     .breakthrough = "breakthrough",
+    .supply = "SUPPLY",
+    .supply_line = "the LINE caps it: ↑ won't help, [u] will",
+    .supply_line_max = "the LINE caps it (fiber is the top)",
+    .supply_router = "the ROUTER sets it: ↑ sends more",
+    .supply_matched = "router and line are matched",
+    .supply_off = "router OFF: nothing gets through",
+    .supply_full = "relay FULL: extra burns as heat",
+    .supply_short = [](Arg got, Arg wanted) {
+        return "HUB SHORT: " + got + " of " + wanted;
+    },
+    .supply_short_hint = "  [p] feeds it first",
 
     .signal_log = " SIGNAL LOG ",
     .console_online = "Console online. Two fronts, one hub. Press SPACE to go live.",
@@ -188,6 +227,18 @@ inline const Lang kEnglish = {
         return "Not enough matter: " + cost + " needed for the " + f + " line.";
     },
     .took_priority = [](Arg f) { return f + " router takes priority on the hub buffer."; },
+    .router_at_max = [](Arg f, Arg max) {
+        return f + " router is already at its maximum (" + max + "/t).";
+    },
+    .router_at_off = [](Arg f) { return f + " router is already off."; },
+    .router_changed = [](Arg f, Arg from, Arg to, Arg flow_from, Arg flow_to) {
+        return f + " router " + from + " -> " + to + "/t: supply " + flow_from + " -> " +
+               flow_to + "/t.";
+    },
+    .router_capped = [](Arg f, Arg from, Arg to, Arg flow, Arg grade) {
+        return f + " router " + from + " -> " + to + "/t: supply stays " + flow + "/t, the " +
+               grade + " line is the limit.";
+    },
     .contact = [](Arg f, Arg peak) {
         return f + ": enemy contact, flare peaking at " + peak + "/t.";
     },
@@ -219,6 +270,8 @@ inline const Lang kEnglish = {
                   "your only weapon is command bandwidth.",
     .brief_hub = "- The HUB makes 12 signal per tick; 3 go to upkeep. Routers push the rest "
                  "down the LINES into each front's RELAY.",
+    .brief_flow = "- A front's SUPPLY is the smallest of: its ROUTER setting, its LINE, and what "
+                  "is left in the hub. The SUPPLY row shows which one is holding it back.",
     .brief_flares = "- The enemy FLARES the fronts in turn. Combat drains the relay.",
     .brief_tiers = "- A relay's level sets its front's command tier:",
     .brief_tier_range = {"below 5", "5 to 15", "above 15"},
@@ -227,8 +280,10 @@ inline const Lang kEnglish = {
     .brief_lines = "- Copper lines carry 1/t. Spend MATTER on coax (4/t) and fiber (8/t). Once "
                    "your lines outgrow the hub, you must choose who gets fed: router allocation "
                    "and priority.",
-    .brief_intel = "- The scope shows enemy intel for the next 20 ticks (dimmed). Fill a relay "
-                   "BEFORE its flare. Spectrum storms triple relay decay.",
+    .brief_intel = "- Right of the bar, the scope shows the next 20 ticks (dimmed): the enemy "
+                   "wave, and where your relay and TIER will be if you change nothing. Every "
+                   "key redraws it, so try a move and watch the future change. Spectrum storms "
+                   "triple relay decay.",
     .brief_escalation = "- The enemy escalates every 100 ticks. Standing still loses.",
     .brief_start = "Press SPACE to go live. h reopens this briefing, l switches language.",
 
@@ -278,8 +333,14 @@ inline const Lang kUkrainian = {
     .front_row = "ФРОНТ",
     .wave = "ХВИЛЯ",
     .level = "РІВЕНЬ",
+    .tier_row = "РЕЖИМ",
     .past = "минуле",
-    .intel = "розвідка",
+    .outlook_falls = [](Arg t) { return "✖ ФРОНТ ВПАДЕ за " + t + "т"; },
+    .outlook_breaks = [](Arg t) { return "★ ПРОРИВ за " + t + "т"; },
+    .outlook_worse = [](Arg tier, Arg t) { return "⚠ " + tier + " за " + t + "т"; },
+    .outlook_recovers = [](Arg tier, Arg t) { return "▲ " + tier + " за " + t + "т"; },
+    .outlook_stuck = [](Arg, Arg w) { return "⚠ не відновиться за " + w + "т"; },
+    .outlook_holds = "✔ тримається",
     .maxed = "максимум",
     .matter_unit = "м",
     .priority_on = "★ ПРІОРИТЕТ",
@@ -290,6 +351,17 @@ inline const Lang kUkrainian = {
     .quiet = [](Arg t) { return "тиша, контакт за " + t + "т"; },
     .collapse = "обвал",
     .breakthrough = "прорив",
+    .supply = "ПОДАЧА",
+    .supply_line = "межа - ЛІНІЯ: ↑ не допоможе, [u] допоможе",
+    .supply_line_max = "межа - ЛІНІЯ (оптика - це максимум)",
+    .supply_router = "подачу задає РОУТЕР: ↑ дасть більше",
+    .supply_matched = "роутер і лінія врівноважені",
+    .supply_off = "роутер ВИМКНЕНО: нічого не йде",
+    .supply_full = "реле ПОВНЕ: надлишок іде в тепло",
+    .supply_short = [](Arg got, Arg wanted) {
+        return "ХАБ ПОРОЖНІЙ: " + got + " з " + wanted;
+    },
+    .supply_short_hint = "  [p] дає першість",
 
     .signal_log = " ЖУРНАЛ СИГНАЛІВ ",
     .console_online = "Пульт на зв'язку. Два фронти, один хаб. SPACE - вийти в ефір.",
@@ -301,6 +373,18 @@ inline const Lang kUkrainian = {
         return f + ": бракує матерії, на лінію потрібно " + cost + ".";
     },
     .took_priority = [](Arg f) { return f + ": роутер отримує пріоритет на буфер хаба."; },
+    .router_at_max = [](Arg f, Arg max) {
+        return f + ": роутер уже на максимумі (" + max + "/т).";
+    },
+    .router_at_off = [](Arg f) { return f + ": роутер уже вимкнено."; },
+    .router_changed = [](Arg f, Arg from, Arg to, Arg flow_from, Arg flow_to) {
+        return f + ": роутер " + from + " -> " + to + "/т, подача " + flow_from + " -> " +
+               flow_to + "/т.";
+    },
+    .router_capped = [](Arg f, Arg from, Arg to, Arg flow, Arg grade) {
+        return f + ": роутер " + from + " -> " + to + "/т, подача лишається " + flow +
+               "/т, межа - лінія " + grade + ".";
+    },
     .contact = [](Arg f, Arg peak) {
         return f + ": контакт із ворогом, пік спалаху " + peak + "/т.";
     },
@@ -332,6 +416,8 @@ inline const Lang kUkrainian = {
                   "ваша єдина зброя це командна смуга пропускання.",
     .brief_hub = "- ХАБ виробляє 12 сигналу за тік; 3 іде на утримання. Роутери женуть решту "
                  "ЛІНІЯМИ до РЕЛЕ кожного фронту.",
+    .brief_flow = "- ПОДАЧА на фронт - це найменше з трьох: налаштування РОУТЕРА, пропускна "
+                  "здатність ЛІНІЇ і те, що лишилося в хабі. Рядок ПОДАЧА показує, що стримує.",
     .brief_flares = "- Ворог по черзі розпалює СПАЛАХИ на фронтах. Бій виснажує реле.",
     .brief_tiers = "- Рівень реле визначає командний режим фронту:",
     .brief_tier_range = {"менше 5", "від 5 до 15", "понад 15"},
@@ -342,8 +428,10 @@ inline const Lang kUkrainian = {
     .brief_lines = "- Мідні лінії несуть 1/т. Витрачайте МАТЕРІЮ на коаксіал (4/т) і оптику "
                    "(8/т). Коли лінії переростуть хаб, доведеться обирати, кого годувати: "
                    "розподіл роутерів і пріоритет.",
-    .brief_intel = "- Осцилограф показує розвідку ворога на 20 тіків уперед (тьмяно). "
-                   "Заповнюйте реле ДО спалаху. Спектральні шторми потроюють розпад реле.",
+    .brief_intel = "- Праворуч від риски осцилограф показує наступні 20 тіків (тьмяно): хвилю "
+                   "ворога і те, де будуть ваше реле та РЕЖИМ, якщо нічого не змінювати. Кожна "
+                   "клавіша перемальовує прогноз, тож пробуйте хід і дивіться, як змінюється "
+                   "майбутнє. Спектральні шторми потроюють розпад реле.",
     .brief_escalation = "- Ворог посилюється кожні 100 тіків. Хто стоїть на місці, той програє.",
     .brief_start = "SPACE - вийти в ефір. h знову відкриває брифінг, l перемикає мову.",
 

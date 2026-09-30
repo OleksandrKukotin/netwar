@@ -3,6 +3,7 @@
 #include "engine.hpp"
 #include "tier.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -106,6 +107,13 @@ public:
     [[nodiscard]] Signal line_throughput(Front front) const;
     [[nodiscard]] Signal allocation(Front front) const;
     [[nodiscard]] Signal router_max() const { return router_max_; }
+    // What the router can move per tick: its allocation, capped by the line.
+    [[nodiscard]] Signal requested_flow(Front front) const {
+        return std::min(allocation(front), line_throughput(front));
+    }
+    // What the router actually moved on the last tick. Below requested_flow
+    // only when the hub buffer ran short.
+    [[nodiscard]] Signal delivered(Front front) const;
     // Matter needed for the next upgrade; 0 when the line is already fiber.
     [[nodiscard]] Signal upgrade_cost(Front front) const;
 

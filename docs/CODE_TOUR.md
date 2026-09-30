@@ -57,7 +57,7 @@ struct Node {
     NodeId id{};  NodeKind kind{};  std::string name;
     Signal generation{};              // Source
     Signal stored{}, capacity{};      // Pool
-    Signal allocation{};              // Gate
+    Signal allocation{}, routed{};    // Gate: limit, and what moved last tick
     Signal consumption{};             // Drain: fixed pull per tick
     std::int64_t decay_per_mille{};   // Drain: % leak of upstream pool
     Signal consumed{};                // Drain: lifetime total destroyed

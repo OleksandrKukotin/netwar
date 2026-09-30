@@ -125,6 +125,31 @@ TEST_CASE("a router set to zero routes nothing to its relay") {
     }
 }
 
+TEST_CASE("a router moves what its line allows, not what it asks for") {
+    Match m;
+    CHECK(m.requested_flow(Front::West) == units(1)); // router 8/t over copper 1/t
+    m.set_allocation(Front::West, units(3));
+    CHECK(m.requested_flow(Front::West) == units(1)); // still the line
+    REQUIRE(m.upgrade_line(Front::West));             // coax 4/t
+    CHECK(m.requested_flow(Front::West) == units(3)); // now the router
+    m.step();
+    CHECK(m.delivered(Front::West) == units(3));
+    CHECK(m.delivered(Front::East) == units(1));
+}
+
+TEST_CASE("a short hub serves the priority router first") {
+    Match m(MatchRules{.starting_matter = units(200)});
+    for (Front f : {Front::West, Front::East}) {
+        REQUIRE(m.upgrade_line(f));
+        REQUIRE(m.upgrade_line(f)); // fiber: 8 + 8 outruns the hub's 9/t
+    }
+    m.set_priority(Front::East);
+    for (int i = 0; i < 30; ++i) m.step();
+    CHECK(m.delivered(Front::East) == m.requested_flow(Front::East));
+    CHECK(m.delivered(Front::West) < m.requested_flow(Front::West));
+    CHECK(m.delivered(Front::West) + m.delivered(Front::East) == units(9));
+}
+
 TEST_CASE("relays never exceed their field capacity") {
     Match m;
     for (int i = 0; i < 300 && m.outcome() == Outcome::InProgress; ++i) {

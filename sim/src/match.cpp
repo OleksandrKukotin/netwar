@@ -165,6 +165,10 @@ Signal Match::allocation(Front front) const {
     return engine_.graph().find(side(front).router)->allocation;
 }
 
+Signal Match::delivered(Front front) const {
+    return engine_.graph().find(side(front).router)->routed;
+}
+
 Signal Match::upgrade_cost(Front front) const {
     switch (side(front).grade) {
     case LineGrade::Copper: return rules_.coax_cost;

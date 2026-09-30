@@ -54,8 +54,9 @@ void Engine::route() {
     // Gates pull from their upstream pool and forward through their outbound
     // line in one motion — routers hold no signal between ticks. Node vector
     // order fixes the contention priority deterministically.
-    for (const auto& gate : graph_.nodes) {
+    for (auto& gate : graph_.nodes) {
         if (gate.kind != NodeKind::Gate) continue;
+        gate.routed = 0;
 
         for (const auto& in : graph_.connections) {
             if (in.to != gate.id) continue;
@@ -73,6 +74,7 @@ void Engine::route() {
                     {gate.allocation, in.throughput, out.throughput, upstream->stored});
                 upstream->stored -= transfer;
                 deposit(*downstream, transfer);
+                gate.routed += transfer;
             }
         }
     }

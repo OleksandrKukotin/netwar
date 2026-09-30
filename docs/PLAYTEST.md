@@ -32,6 +32,21 @@ The deaths seemed to come **during spectrum storms, with nothing left in the buf
 
 **D4 — Difficulty.** The juggling bot wins ~35/40, but it acts every tick with exact numbers. A human needs a margin. D1–D3 probably explain most of the gap, so fix those before retuning numbers.
 
+## Playtest #2 — 2026-09-29 (a friend, first time)
+
+**Build:** v0.2.0-alpha.
+
+**Result:** "He didn't understand anything." His one concrete request was to make the interface bigger, so he could see what the Up and Down arrows change.
+
+**Diagnosis.** This was more than a display problem. At the start of a match, ↑↓ had **no effect at all**. A front receives `min(router, line, hub)`. Routers start at their 8/t maximum, so ↑ is clamped, and the copper line carries 1/t, so ↓ changes nothing until the router drops below 1. The only feedback was a small `■■■■□□□□` row that changed while the relay kept behaving the same. This is D2 again, now affecting ↑↓ as well as `p`.
+
+**Response (UX, no rules change):**
+- The router bar is twice as wide, and each unit is colour-coded: cyan if the line can carry it, dim red if the router asks for more than the line can carry.
+- A new **SUPPLY** row in each front shows how much reaches the relay per tick and which link limits it: router, line, a full relay, or **HUB SHORT** (with the `[p]` hint when the front lacks priority).
+- Every ↑↓ press writes a log line, for example "WEST router 6 -> 5/t: supply stays 1/t, the COPPER line is the limit." Held keys collapse into one line per tick.
+- The briefing gained one line explaining SUPPLY = the smallest of router, line and hub.
+- **The scope now shows the future.** Right of the bar, the LEVEL row continues 20 ticks ahead (dimmed), showing where the relay will be if nothing changes. A new TIER strip (`█` directed, `▓` semi, `▒` blackout) makes the tiers readable at a glance, and a one-line verdict sits under it (`⚠ BLACKOUT in 7t`, `✖ FRONT FALLS in 9t`, `▲ DIRECTED in 4t`, `✔ holds`). The console computes this by running a copy of `Match` forward after every tick and every command. The copy sees nothing extra: the wave period equals the 20-tick intel window, and storms are announced 20 ticks ahead. Because every key press redraws the future, each verb shows its effect immediately.
+
 ---
 
 ## Open proposals
@@ -39,8 +54,8 @@ The deaths seemed to come **during spectrum storms, with nothing left in the buf
 ### UX: no design decision needed
 
 - [ ] **Contextual hints** in the log/status line, driven by state. Examples: "30 matter: press `u` to lay coax on the selected front", "EAST flare in 5t and its relay is at 6: feed it". Show them heavily in the first match and back off once the player has used each verb.
-- [ ] **Show the actual flow per line** in each front panel: requested vs delivered this tick (e.g. `ROUTER 8/t -> delivered 3.0/t`).
-- [ ] **A "HUB SHORT" indicator** when routers pull more than the buffer holds, naming who got served first. This is the moment `p` matters, so make it loud.
+- [x] **Show the actual flow per line** in each front panel: requested vs delivered this tick (e.g. `ROUTER 8/t -> delivered 3.0/t`).
+- [x] **A "HUB SHORT" indicator** when routers pull more than the buffer holds, naming who got served first. This is the moment `p` matters, so make it loud.
 - [ ] **Post-match debrief:** a per-flare timeline of each front's tier and hold delta, heat vented while the buffer was full, time spent in each tier, and the storm windows. The playtester was already reading patterns; the debrief should feed that.
 - [ ] **Remove the "Fill the relays" storm advice** until there is something the player can actually do (see D3).
 
