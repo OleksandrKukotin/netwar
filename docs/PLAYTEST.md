@@ -47,6 +47,22 @@ The deaths seemed to come **during spectrum storms, with nothing left in the buf
 - The briefing gained one line explaining SUPPLY = the smallest of router, line and hub.
 - **The scope now shows the future.** Right of the bar, the LEVEL row continues 20 ticks ahead (dimmed), showing where the relay will be if nothing changes. A new TIER strip (`█` directed, `▓` semi, `▒` blackout) makes the tiers readable at a glance, and a one-line verdict sits under it (`⚠ BLACKOUT in 7t`, `✖ FRONT FALLS in 9t`, `▲ DIRECTED in 4t`, `✔ holds`). The console computes this by running a copy of `Match` forward after every tick and every command. The copy sees nothing extra: the wave period equals the 20-tick intel window, and storms are announced 20 ticks ahead. Because every key press redraws the future, each verb shows its effect immediately.
 
+## Playtest #3 — 2026-10-02 (Vlad, professional software tester)
+
+**Build:** not stated. Either the v0.2.0-alpha release or `main` at `3fed100` (Playtest #2 response, pushed 2026-09-30). Ask.
+
+**Source:** issue [#7](https://github.com/OleksandrKukotin/netwar/issues/7), written as a restaurant-inspector review (the "Ревізор" TV show). The attached image is a torn ace of clubs, a joke rather than a game screenshot.
+
+**Report, verbatim:** "Я не виграв. Звуків нема. Румуни бігають. Їсти не дають. 1/т. — ревізор не рекомендує." ("I didn't win. No sound. Romanians are running around. They don't feed you. 1/t. The inspector does not recommend.")
+
+**Reading it:**
+- **No win.** Three testers, zero human wins. This is consistent with D1–D4.
+- **No sound.** The console is silent. The owner replied with a promise to add sound and make the game clearer.
+- **"They don't feed you. 1/t."** Most likely the copper line: a front starts on 1/t of supply, and that is all it gets until the player buys coax. This is the same wall as Playtest #2. The opening feels like starvation, and the way out (`u`) is not obvious. This is D1 again.
+- **"Romanians are running around."** Unclear. It could be a joke, or it could be something on screen that moves without explanation (the scrolling scope, the log, the forecast row). Ask.
+
+**Follow-up:** Vlad tests software for a living. The next round should get a structured report: build or commit, terminal and OS, number of matches, how each one ended, and the first moment he did not know what to do.
+
 ---
 
 ## Open proposals
@@ -58,6 +74,7 @@ The deaths seemed to come **during spectrum storms, with nothing left in the buf
 - [x] **A "HUB SHORT" indicator** when routers pull more than the buffer holds, naming who got served first. This is the moment `p` matters, so make it loud.
 - [ ] **Post-match debrief:** a per-flare timeline of each front's tier and hold delta, heat vented while the buffer was full, time spent in each tier, and the storm windows. The playtester was already reading patterns; the debrief should feed that.
 - [ ] **Remove the "Fill the relays" storm advice** until there is something the player can actually do (see D3).
+- [ ] **Audio cues** (Playtest #3; promised in #7). Start with the terminal bell on brownout, a front falling, and a storm arriving. The owner decides later whether real audio belongs in the console or waits for the graphical client. Keep it in `cli/`: no sound code in `sim/`.
 
 ### Design: owner decides
 
