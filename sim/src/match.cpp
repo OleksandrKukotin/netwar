@@ -4,6 +4,7 @@
 #include "netwar/wave.hpp"
 
 #include <algorithm>
+#include <stdexcept>
 #include <utility>
 
 namespace netwar {
@@ -24,29 +25,64 @@ Signal throughput_of(LineGrade grade) {
 // router maximum, and the relay level alone should limit what combat takes.
 constexpr Signal kCombatEdge = units(1000);
 
+// Rejects rules that would divide by zero, wrap an unsigned span, or roll
+// negative flare peaks.
+const MatchRules& validated(const MatchRules& r) {
+    if (r.escalation_period == 0) {
+        throw std::invalid_argument("MatchRules: escalation_period must be positive");
+    }
+    if (r.storm_gap_max < r.storm_gap_min) {
+        throw std::invalid_argument("MatchRules: storm_gap_max is below storm_gap_min");
+    }
+    if (r.flare_jitter_per_mille < 0 || r.flare_jitter_per_mille > 1000) {
+        throw std::invalid_argument("MatchRules: flare_jitter_per_mille must be within 0..1000");
+    }
+    return r;
+}
+
+// Match looks nodes up by ID on every tick; checking them once here makes
+// those lookups safe to dereference.
+void require_node(const Graph& g, NodeId id) {
+    if (g.find(id) == nullptr) throw std::logic_error("Match: scenario lacks a required node");
+}
+
+std::size_t index_of_line(const Graph& g, std::uint32_t id) {
+    for (std::size_t i = 0; i < g.connections.size(); ++i) {
+        if (g.connections[i].id == id) return i;
+    }
+    throw std::logic_error("Match: scenario lacks a forward line");
+}
+
 } // namespace
 
 Match::Match(MatchRules rules)
-    : rules_(rules), engine_(make_readme_scenario()), rng_(rules.seed) {
+    : rules_(validated(rules)), engine_(make_readme_scenario()), rng_(rules.seed) {
+    Graph& g = engine_.graph();
     sides_[static_cast<std::size_t>(Front::West)] = {.relay = ids::kWestRelay,
                                                      .router = ids::kWestRouter,
                                                      .intensity = ids::kWestIntensity,
                                                      .decay = ids::kWestDecay,
-                                                     .line = ids::kWestLine,
+                                                     .line = index_of_line(g, ids::kWestLine),
                                                      .phase = 0};
     sides_[static_cast<std::size_t>(Front::East)] = {.relay = ids::kEastRelay,
                                                      .router = ids::kEastRouter,
                                                      .intensity = ids::kEastIntensity,
                                                      .decay = ids::kEastDecay,
-                                                     .line = ids::kEastLine,
+                                                     .line = index_of_line(g, ids::kEastLine),
                                                      .phase = kCosineOffset};
+    require_node(g, ids::kHubBuffer);
+    for (const auto& s : sides_) {
+        for (NodeId id : {s.relay, s.router, s.intensity, s.decay}) require_node(g, id);
+    }
 
-    Graph& g = engine_.graph();
     router_max_ = g.find(ids::kWestRouter)->allocation;
     matter_ = rules_.starting_matter;
 
     for (auto& s : sides_) {
         s.hold = rules_.starting_hold;
+        // Storms raise decay temporarily; calm weather restores the
+        // scenario's own rate rather than a constant.
+        s.base_decay = g.find(s.decay)->decay_per_mille;
         // A front already mid-wave at tick 0 is inside the deployment window.
         s.current_peak = rules_.opening_grace > 0 ? 0 : roll_peak();
         s.next_peak = roll_peak();
@@ -110,8 +146,10 @@ void Match::step() {
     }
 
     if (now >= storm_end()) schedule_storm(now);
-    const std::int64_t decay = storm_active() ? rules_.storm_decay_per_mille : 50;
-    for (const auto& s : sides_) g.find(s.decay)->decay_per_mille = decay;
+    for (const auto& s : sides_) {
+        g.find(s.decay)->decay_per_mille =
+            storm_active() ? rules_.storm_decay_per_mille : s.base_decay;
+    }
 
     engine_.tick();
     matter_ += rules_.matter_income;
@@ -186,9 +224,18 @@ Signal Match::intensity(Front front) const {
 
 Tick Match::ticks_to_flare(Front front) const {
     // Positive half of the wave is steps 1..9; step 0 and the trough are quiet.
+    // Start from the flare the next step() samples, or the next one to begin.
+    const auto now = static_cast<std::int64_t>(engine_.current_tick());
     const std::int64_t step = wave_step(front);
-    if (step >= 1 && step < kWavePeriod / 2) return 0;
-    return static_cast<Tick>((kWavePeriod + 1 - step) % kWavePeriod);
+    const bool in_flare = step >= 1 && step < kWavePeriod / 2;
+    std::int64_t flare_start =
+        in_flare ? now - (step - 1) : now + (kWavePeriod + 1 - step) % kWavePeriod;
+
+    // Flares that begin inside the deployment window stay silent (step()),
+    // so the next contact is the first flare to begin after it.
+    const auto grace = static_cast<std::int64_t>(rules_.opening_grace);
+    while (grace > 0 && flare_start < grace) flare_start += kWavePeriod;
+    return static_cast<Tick>(std::max(flare_start - now, std::int64_t{0}));
 }
 
 Signal Match::forecast_intensity(Front front, Tick ahead) const {
@@ -222,18 +269,10 @@ bool Match::storm_forecast() const {
     return now + rules_.storm_warning >= storm_start_ && now < storm_end();
 }
 
-Connection& Match::line(Front front) {
-    for (auto& conn : engine_.graph().connections) {
-        if (conn.id == side(front).line) return conn;
-    }
-    return engine_.graph().connections.front(); // unreachable: GDD lines always exist
-}
+Connection& Match::line(Front front) { return engine_.graph().connections[side(front).line]; }
 
 const Connection& Match::line(Front front) const {
-    for (const auto& conn : engine_.graph().connections) {
-        if (conn.id == side(front).line) return conn;
-    }
-    return engine_.graph().connections.front();
+    return engine_.graph().connections[side(front).line];
 }
 
 std::int64_t Match::wave_step(Front front) const {
@@ -252,6 +291,7 @@ Signal Match::roll_peak() {
     const auto escalation = static_cast<Signal>(engine_.current_tick() / rules_.escalation_period);
     const Signal base =
         std::min(rules_.base_amplitude + escalation * rules_.escalation_step, rules_.max_amplitude);
+    flare_base_ = base;
 
     const std::int64_t span = 2 * rules_.flare_jitter_per_mille + 1;
     const std::int64_t jitter =

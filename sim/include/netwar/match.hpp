@@ -76,6 +76,8 @@ struct MatchRules {
 
 class Match {
 public:
+    // Throws std::invalid_argument when the rules are inconsistent (a zero
+    // escalation period, an inverted storm gap, jitter outside 0..1000).
     explicit Match(MatchRules rules = {});
 
     // --- Player commands (valid between ticks) ---------------------------
@@ -129,7 +131,12 @@ public:
     [[nodiscard]] Signal flare_peak(Front front) const { return side(front).current_peak; }
     // Intel: the peak of the next flare is known one flare in advance.
     [[nodiscard]] Signal next_flare_peak(Front front) const { return side(front).next_peak; }
-    // Ticks until the front's next flare begins (0 while flaring).
+    // Escalated amplitude, before jitter, of the most recently forecast
+    // flare. It rises when a stronger flare enters the intel window, which
+    // is one flare before that flare hits.
+    [[nodiscard]] Signal flare_base() const { return flare_base_; }
+    // Ticks until the front's next audible flare begins (0 while flaring).
+    // Flares silenced by the deployment window are skipped.
     [[nodiscard]] Tick ticks_to_flare(Front front) const;
     // Intel forecast: the intensity the front will sample `ahead` ticks from
     // now (1 = the next step). Exact within one wave period, barring
@@ -148,7 +155,8 @@ private:
         NodeId router{};
         NodeId intensity{};
         NodeId decay{};
-        std::uint32_t line{};
+        std::size_t line{}; // index into the graph's connections
+        std::int64_t base_decay{};
         std::int64_t phase{};
         LineGrade grade = LineGrade::Copper;
         Hold hold{};
@@ -173,6 +181,7 @@ private:
     Engine engine_;
     std::array<Side, kFrontCount> sides_{};
     Signal router_max_{};
+    Signal flare_base_{};
     Signal matter_{};
     Tick storm_start_{};
     std::uint64_t rng_{};

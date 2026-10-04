@@ -249,7 +249,7 @@ inline const Lang kEnglish = {
     },
     .storm_hits = "Spectrum storm hits. Relays are leaking.",
     .storm_passed = "Storm has passed.",
-    .escalates = "Enemy escalates: flares grow stronger.",
+    .escalates = "Intel: the enemy escalates. Forecast flares are stronger now.",
     .won_log = "BREAKTHROUGH. The line holds.",
     .lost_log = "A FRONT HAS COLLAPSED.",
 
@@ -395,7 +395,7 @@ inline const Lang kUkrainian = {
     },
     .storm_hits = "Спектральний шторм! Реле втрачають сигнал.",
     .storm_passed = "Шторм минув.",
-    .escalates = "Ворог посилюється: спалахи стають сильнішими.",
+    .escalates = "Розвідка: ворог посилюється. Прогнозовані спалахи тепер сильніші.",
     .won_log = "ПРОРИВ. Лінія тримається.",
     .lost_log = "ФРОНТ ОБВАЛИВСЯ.",
 

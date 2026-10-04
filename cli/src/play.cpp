@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <charconv>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
@@ -252,6 +253,7 @@ struct Console {
         }
         const bool forecast_before = match.storm_forecast();
         const bool storm_before = match.storm_active();
+        const Signal flare_base_before = match.flare_base();
 
         match.step();
 
@@ -278,10 +280,9 @@ struct Console {
         if (match.storm_active() && !storm_before) note(l.storm_hits, kRed);
         if (!match.storm_active() && storm_before) note(l.storm_passed, kCyan);
 
-        const auto period = match.rules().escalation_period;
-        if (match.tick() % period == 0) {
-            note(l.escalates, kRed);
-        }
+        // Logged when a stronger flare enters the intel window, not on the
+        // escalation tick: the flare already forecast keeps its old peak.
+        if (match.flare_base() > flare_base_before) note(l.escalates, kRed);
 
         switch (match.outcome()) {
         case netwar::Outcome::Victory: note(l.won_log, kGreen); break;
@@ -657,6 +658,10 @@ bool pressed(const Event& e, char latin, const char* cyrillic) {
     return e == Event::Character(latin) || e == Event::Character(cyrillic);
 }
 
+constexpr const char* kUsage = "usage: netwar [seed] [--lang en|uk]\n"
+                               "  seed         match seed, a non-negative integer (random if omitted)\n"
+                               "  --lang CODE  console language; skips the start-up language picker\n";
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -670,8 +675,17 @@ int main(int argc, char** argv) {
             code = argv[++i];
         } else if (arg.starts_with("--lang=")) {
             code = arg.substr(7);
+        } else if (arg == "--help" || arg == "-h") {
+            std::fputs(kUsage, stdout);
+            return 0;
         } else {
-            seed = std::strtoull(argv[i], nullptr, 10);
+            const char* end = arg.data() + arg.size();
+            const auto [ptr, ec] = std::from_chars(arg.data(), end, seed);
+            if (ec != std::errc{} || ptr != end) {
+                std::fprintf(stderr, "netwar: unknown argument '%.*s'\n%s",
+                             static_cast<int>(arg.size()), arg.data(), kUsage);
+                return 2;
+            }
             continue;
         }
         lang = console_text::find_lang(code);
