@@ -50,3 +50,20 @@ Tests enforce invariants (pools never negative, caps never exceeded); `tests/gol
 ## Licensing intent
 
 `LICENSE` is GPL-3.0 (declared as GPL-3.0-or-later in the README's License section) and covers the code: `sim/`, `cli/`, `tests/`, CMake files. Design docs (`docs/`, including `docs/ideas.md`) are © Oleksandr Kukotin, all rights reserved. No per-file SPDX headers, by the owner's choice. Don't add a different license.
+
+## Working agreement
+
+The owner is a developer and wants to write the code himself. By default, explain what to change and where (files, lines, approach, pitfalls, how to test it), and leave the implementation to him. Afterwards, review his diff and run the tests. Write code only when he explicitly asks for it.
+
+## Where we left off (2026-10-04)
+
+Temporary handoff note: update it or delete it as the work moves on.
+
+- Issue #9 is a code review by Vlad, a professional software tester, with 18 items. Items 1, 3, 4, 5, 10 and 14 are fixed in `d1a7986` (refs #9; the issue stays open).
+- **Next is item 2, which the owner implements himself.** In `sim/src/engine.cpp`, node limits apply per edge instead of per node. This affects four places: `generate()` (generation), upkeep in `route()` (consumption), gates in `route()` (allocation; `gate.routed` already serves as the counter), and `combat()` (intensity). `decay()` is correct as it is.
+  - The fix is a per-node budget per tick that the edges spend in vector order. Never use `Node::consumed` as the budget: it is a lifetime total.
+  - All current graphs are 1:1, so the 37 existing tests (golden included) must pass unchanged.
+  - Add a small branching-graph test per phase to `tests/sim_tests.cpp`. Each new test must fail on the old code.
+  - Open design decision: should the budget go to edges in order, or be split evenly? Record the choice in one sentence in `docs/GDD.md`.
+- After item 2: items 11–13 (warning flags, a GCC + Clang CI matrix, an ASan/UBSan build), then 15 (the Windows path above). The UI items (6–9, 16–18) wait for the clarity work that follows the playtests.
+- Issue #8 (empty, from Vlad) is still open and can be closed. Issue #7's feedback is recorded in `docs/PLAYTEST.md` as Playtest #3, and sound plus clarity were promised there.
